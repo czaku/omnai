@@ -73,6 +73,63 @@ declare -A AI_KNOWN_MODELS=(
 )
 
 #------------------------------------------------------------------------------
+# Config File Support (v0.6.0)
+#------------------------------------------------------------------------------
+
+# Load configuration from file
+# Usage: ai_load_config
+# Config file: ~/.ai-runner.conf or AI_RUNNER_CONFIG
+ai_load_config() {
+  local config_file="${AI_RUNNER_CONFIG:-${HOME}/.ai-runner.conf}"
+
+  if [[ -f "$config_file" ]]; then
+    ai_log_verbose "Loading config from: $config_file"
+
+    # Source the config file (allows any shell syntax)
+    # shellcheck source=/dev/null
+    source "$config_file" 2>/dev/null || true
+
+    ai_log_debug "Config loaded: engine=${AI_ENGINE:-auto}, model=${AI_MODEL:-default}"
+  fi
+}
+
+# Save current configuration to file
+# Usage: ai_save_config
+ai_save_config() {
+  local config_file="${AI_RUNNER_CONFIG:-${HOME}/.ai-runner.conf}"
+
+  cat > "$config_file" << EOF
+# ai-runner configuration
+# Generated: $(date)
+
+# Default engine (auto, claude, opencode, ollama, aider)
+export AI_ENGINE="${AI_ENGINE:-}"
+
+# Default model
+export AI_MODEL="${AI_MODEL:-}"
+
+# Verbose level (0, 1, 2)
+export AI_VERBOSE="${AI_VERBOSE:-0}"
+
+# Timeout in seconds
+export AI_TIMEOUT="${AI_TIMEOUT:-300}"
+
+# Working directory
+export AI_WORKING_DIR="${AI_WORKING_DIR:-}"
+
+# Retry settings
+export AI_RETRY_COUNT="${AI_RETRY_COUNT:-3}"
+export AI_RETRY_DELAY="${AI_RETRY_DELAY:-5}"
+export AI_RETRY_BACKOFF="${AI_RETRY_BACKOFF:-2}"
+EOF
+
+  ai_log_success "Config saved to: $config_file"
+}
+
+# Initialize config on load
+ai_load_config
+
+#------------------------------------------------------------------------------
 # Logging
 #------------------------------------------------------------------------------
 
@@ -1247,8 +1304,17 @@ OPTIONS:
   --info                 Show configuration info
   -l, --list             List installed engines with all models
   --list-engines         List engine status only
+  --save-config          Save current config to ~/.ai-runner.conf
+  --load-config          Reload config from ~/.ai-runner.conf
   -h, --help             Show this help
   --version              Show version
+
+CONFIG FILE:
+  Configuration can be stored in ~/.ai-runner.conf
+  Example:
+    export AI_ENGINE=claude
+    export AI_MODEL=sonnet
+    export AI_TIMEOUT=600
 
 EXAMPLES:
   # Auto-detect engine
@@ -1321,6 +1387,15 @@ _ai_cli_main() {
         ;;
       --list|-l)
         ai_list
+        exit 0
+        ;;
+      --save-config)
+        ai_save_config
+        exit $?
+        ;;
+      --load-config)
+        ai_load_config
+        ai_log_success "Config reloaded"
         exit 0
         ;;
       -h|--help)

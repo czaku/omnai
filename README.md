@@ -69,7 +69,9 @@ cat output.txt
 
 ## Configuration
 
-Set via environment variables:
+Set via environment variables or config file:
+
+### Environment Variables
 
 ```bash
 # Choose backend (auto-detected if not set)
@@ -95,6 +97,36 @@ export AI_RETRY_BACKOFF=2
 
 # Progress callback function name
 export AI_PROGRESS_CALLBACK=my_progress_handler
+```
+
+### Config File
+
+Create `~/.ai-runner.conf`:
+
+```bash
+# ai-runner configuration
+export AI_ENGINE=claude
+export AI_MODEL=sonnet
+export AI_VERBOSE=0
+export AI_TIMEOUT=300
+export AI_RETRY_COUNT=3
+export AI_RETRY_DELAY=5
+export AI_RETRY_BACKOFF=2
+```
+
+CLI commands:
+```bash
+# Save current config
+ai-runner --save-config
+
+# Reload config
+ai-runner --load-config
+```
+
+Or load in your script:
+```bash
+source ~/dev/ai-runner/ai-runner.sh
+ai_load_config  # Config is auto-loaded on source
 ```
 
 ## API Reference
@@ -360,7 +392,7 @@ analyze_recording() {
 ## Testing
 
 ```bash
-# Run all tests (52 tests)
+# Run all tests (52+ tests)
 bash tests/run_tests.sh
 
 # Run integration tests (requires AI backend)
@@ -368,6 +400,9 @@ python3 tests/test_integration.py
 
 # ShellCheck (requires shellcheck)
 shellcheck -x -s bash ai-runner.sh
+
+# Enable bash completion
+source ~/dev/ai-runner/completion.bash
 ```
 
 ## Version History
