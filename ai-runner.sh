@@ -23,7 +23,31 @@
 #   AI_VERBOSE    - Enable verbose logging (0, 1, or 2 for very verbose)
 #   AI_TIMEOUT    - Timeout in seconds (default: 300)
 
-AI_RUNNER_VERSION="0.1.0"
+#------------------------------------------------------------------------------
+# Exit Code Semantics (v0.2.0)
+#------------------------------------------------------------------------------
+# Standardized exit codes for consistent error handling
+
+AI_EXIT_SUCCESS=0           # Completed successfully
+AI_EXIT_USER_ABORT=1        # User cancelled (Ctrl+C)
+AI_EXIT_PROVIDER_ERROR=2    # Provider error (rate limit, API error, etc.)
+AI_EXIT_INVALID_INPUT=3     # Bad prompt or configuration
+AI_EXIT_INTERNAL_ERROR=4    # ai-runner bug
+AI_EXIT_TIMEOUT=124         # Timed out (standard timeout code)
+
+# Get human-readable name for exit code
+ai_exit_code_name() {
+  local code="$1"
+  case "$code" in
+    0) echo "SUCCESS" ;;
+    1) echo "USER_ABORT" ;;
+    2) echo "PROVIDER_ERROR" ;;
+    3) echo "INVALID_INPUT" ;;
+    4) echo "INTERNAL_ERROR" ;;
+    124) echo "TIMEOUT" ;;
+    *) echo "UNKNOWN($code)" ;;
+  esac
+}
 
 # Supported engines and their known models
 declare -A AI_KNOWN_ENGINES=(
@@ -215,6 +239,44 @@ ai_validate() {
   fi
 
   return 0
+}
+
+#------------------------------------------------------------------------------
+# Working Directory Context (v0.2.0)
+#------------------------------------------------------------------------------
+
+# Run command in specific directory
+# Usage: ai_run --cwd /path/to/dir "prompt"
+# Or set AI_WORKING_DIR environment variable
+ai_run_with_cwd() {
+  local prompt="$1"
+  local cwd="${AI_WORKING_DIR:-${1:-}}"
+  shift
+
+  # Handle --cwd flag syntax
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --cwd)
+        cwd="$2"
+        shift 2
+        ;;
+      *)
+        prompt="$1"
+        shift
+        ;;
+    esac
+  done
+
+  if [[ -n "$cwd" ]]; then
+    if [[ ! -d "$cwd" ]]; then
+      ai_log_error "Working directory not found: $cwd"
+      return 3
+    fi
+    ai_log_verbose "Running in directory: $cwd"
+    (cd "$cwd" && ai_run "$prompt")
+  else
+    ai_run "$prompt"
+  fi
 }
 
 #------------------------------------------------------------------------------
@@ -715,6 +777,223 @@ ai_build_prompt() {
   done
 
   echo "$prompt"
+}
+
+#------------------------------------------------------------------------------
+# Retry Logic (v0.3.0)
+#------------------------------------------------------------------------------
+
+# Run with automatic retry on transient failures
+# Usage: ai_run_with_retry "prompt"
+# Configuration: AI_RETRY_COUNT, AI_RETRY_DELAY, AI_RETRY_BACKOFF
+ai_run_with_retry() {
+  local prompt="$1"
+  local attempt=1
+  local max_attempts="${AI_RETRY_COUNT:-3}"
+  local delay="${AI_RETRY_DELAY:-5}"
+  local backoff="${AI_RETRY_BACKOFF:-2}"
+
+  ai_log_verbose "Starting retry loop (max $max_attempts attempts)"
+
+  while [[ $attempt -le $max_attempts ]]; do
+    ai_log_verbose "Attempt $attempt of $max_attempts"
+
+    if ai_run "$prompt"; then
+      return 0
+    fi
+
+    local exit_code=$?
+
+    # Don't retry for user abort or invalid input
+    if [[ $exit_code -eq $AI_EXIT_USER_ABORT ]] || [[ $exit_code -eq $AI_EXIT_INVALID_INPUT ]]; then
+      ai_log_verbose "Not retrying: exit code $exit_code ($(ai_exit_code_name $exit_code))"
+      return $exit_code
+    fi
+
+    if [[ $attempt -lt $max_attempts ]]; then
+      local wait_time=$delay
+      ai_log_warning "Attempt $attempt failed, waiting ${wait_time}s before retry"
+      sleep "$wait_time"
+      delay=$((delay * backoff))
+    fi
+
+    ((attempt++))
+  done
+
+  ai_log_error "All $max_attempts attempts failed"
+  return $AI_EXIT_PROVIDER_ERROR
+}
+
+#------------------------------------------------------------------------------
+# JSON Validation (v0.3.0)
+#------------------------------------------------------------------------------
+
+# Validate JSON response using jq
+# Usage: ai_json_validated "question" "{\"name\": \"string\"}"
+# Returns: validated JSON or empty string on failure
+ai_json_validated() {
+  local question="$1"
+  local schema="${2:-}"
+  local response
+
+  response=$(ai_json "$question" "$schema")
+
+  # Basic validation: check if it's valid JSON
+  if echo "$response" | jq -e . >/dev/null 2>&1; then
+    echo "$response"
+    return 0
+  else
+    ai_log_warning "JSON validation failed"
+    ai_log_verbose "Response: $response"
+    return 2
+  fi
+}
+
+# Validate JSON against schema file
+# Usage: ai_json_validated_schema "question" schema.json
+ai_json_validated_schema() {
+  local question="$1"
+  local schema_file="$2"
+
+  if [[ ! -f "$schema_file" ]]; then
+    ai_log_error "Schema file not found: $schema_file"
+    return 3
+  fi
+
+  local response
+  response=$(ai_json "$question")
+
+  # Validate using jq with schema
+  if echo "$response" | jq --argjson schema "$(cat "$schema_file")" 'try ($schema | . as $s | . | try (if ($s | type) == "object" then . as $valid | . | if . * $valid == . then true else false end else . == $s end) catch false) catch false' >/dev/null 2>&1; then
+    echo "$response"
+    return 0
+  else
+    ai_log_warning "Schema validation failed"
+    return 2
+  fi
+}
+
+#------------------------------------------------------------------------------
+# Progress Callbacks (v0.4.0)
+#------------------------------------------------------------------------------
+
+# Invoke progress callback
+# Usage: _ai_progress "event" "data"
+_ai_progress() {
+  local event="$1"
+  local data="$2"
+
+  if [[ -n "${AI_PROGRESS_CALLBACK:-}" ]]; then
+    "$AI_PROGRESS_CALLBACK" "$event" "$data"
+  fi
+}
+
+# Set progress callback function
+# Usage: ai_set_progress_callback my_callback_function
+ai_set_progress_callback() {
+  AI_PROGRESS_CALLBACK="$1"
+}
+
+# Run with progress callback
+# Usage: ai_run_with_progress "prompt"
+ai_run_with_progress() {
+  local prompt="$1"
+
+  _ai_progress "started" "$prompt"
+
+  local result
+  local exit_code
+
+  _ai_progress "running" ""
+
+  if result=$(ai_run "$prompt" 2>&1); then
+    exit_code=0
+    _ai_progress "completed" "$result"
+    echo "$result"
+  else
+    exit_code=$?
+    _ai_progress "error" "$(ai_exit_code_name $exit_code)"
+    return $exit_code
+  fi
+}
+
+#------------------------------------------------------------------------------
+# File Context Injection (v0.4.0)
+#------------------------------------------------------------------------------
+
+# Attach files to prompt with clear formatting
+# Usage: ai_run_with_files "Implement this" file1.md file2.txt
+ai_run_with_files() {
+  local instruction="$1"
+  shift
+  local files=("$@")
+
+  if [[ ${#files[@]} -eq 0 ]]; then
+    ai_run "$instruction"
+    return
+  fi
+
+  ai_log_verbose "Attaching ${#files[@]} file(s) to prompt"
+
+  local prompt="$instruction
+
+---
+
+## Context Files"
+
+  local counter=1
+  for file in "${files[@]}"; do
+    if [[ -f "$file" ]]; then
+      local content
+      content=$(cat "$file")
+      prompt+="
+
+=== File $counter: $file ===
+$content
+=== End File $counter ===
+"
+      ((counter++))
+    else
+      ai_log_warning "File not found: $file"
+    fi
+  done
+
+  prompt+="
+
+---
+
+Please consider the context files above when responding."
+
+  ai_run "$prompt"
+}
+
+# Build prompt from template with files attached
+# Usage: ai_build_prompt_with_files "template_dir" "template_name" VAR=value file1.md file2.md
+ai_build_prompt_with_files() {
+  local template_dir="$1"
+  local template_name="$2"
+  shift 2
+
+  local vars=()
+  local files=()
+
+  # Separate variables from files
+  for arg in "$@"; do
+    if [[ -f "$arg" ]]; then
+      files+=("$arg")
+    elif [[ "$arg" == *=* ]]; then
+      vars+=("$arg")
+    fi
+  done
+
+  local instruction
+  instruction=$(ai_build_prompt "$template_dir" "$template_name" "${vars[@]}")
+
+  if [[ ${#files[@]} -gt 0 ]]; then
+    ai_run_with_files "$instruction" "${files[@]}"
+  else
+    ai_run "$instruction"
+  fi
 }
 
 # Stream prompt from stdin (for piping)
