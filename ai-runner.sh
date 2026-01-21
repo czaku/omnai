@@ -699,6 +699,173 @@ ai_list() {
 }
 
 #------------------------------------------------------------------------------
+# Structured API (v0.6.0)
+#------------------------------------------------------------------------------
+
+# Get list of all available engines
+# Usage: ai_get_engines
+# Returns: JSON array of engine names
+ai_get_engines() {
+  local engines="["
+  local first=true
+
+  for engine in claude opencode ollama aider; do
+    if [[ "$first" == "true" ]]; then
+      first=false
+    else
+      engines+=","
+    fi
+    engines+="\"$engine\""
+  done
+
+  engines+="]"
+  echo "$engines"
+}
+
+# Get models for a specific engine
+# Usage: ai_get_models "claude"
+# Returns: JSON array of model names
+ai_get_models() {
+  local engine="$1"
+  local models="["
+  local first=true
+
+  # Known models for each engine
+  case "$engine" in
+    claude)
+      for model in haiku sonnet opus; do
+        [[ "$first" == "true" ]] && first=false || models+=","
+        models+="\"$model\""
+      done
+      ;;
+    ollama)
+      for model in llama3.2 llama3.1 mistral codellama deepseek-coder; do
+        [[ "$first" == "true" ]] && first=false || models+=","
+        models+="\"$model\""
+      done
+      ;;
+    opencode|aider)
+      # These use provider config, no fixed models
+      echo "[]"
+      return 0
+      ;;
+  esac
+
+  # Close the array
+  models+="]"
+  echo "$models"
+}
+
+# Get installed engines
+# Usage: ai_get_installed_engines
+# Returns: JSON array of installed engine names
+ai_get_installed_engines() {
+  local installed="["
+  local first=true
+
+  for engine in claude opencode ollama aider; do
+    if command -v "$engine" &>/dev/null; then
+      [[ "$first" == "true" ]] && first=false || installed+=","
+      installed+="\"$engine\""
+    fi
+  done
+
+  installed+="]"
+  echo "$installed"
+}
+
+# Get engine info as JSON
+# Usage: ai_get_engine_info "claude"
+# Returns: JSON object with engine details
+ai_get_engine_info() {
+  local engine="$1"
+
+  local installed="false"
+  local version=""
+  local models="[]"
+
+  if command -v "$engine" &>/dev/null; then
+    installed="true"
+
+    # Get version
+    case "$engine" in
+      claude) version=$(claude --version 2>/dev/null | head -1 || echo "") ;;
+      ollama) version=$(ollama --version 2>/dev/null | head -1 || echo "") ;;
+      aider) version=$(aider --version 2>/dev/null | head -1 || echo "") ;;
+    esac
+
+    # Get models
+    models=$(ai_get_models "$engine")
+  fi
+
+  # Escape special characters in version
+  version="${version//\"/\\\"}"
+
+  echo "{\"engine\":\"$engine\",\"installed\":$installed,\"version\":\"$version\",\"models\":$models}"
+}
+
+# Get all engines info as JSON
+# Usage: ai_get_all_engines_info
+# Returns: JSON array of all engine info objects
+ai_get_all_engines_info() {
+  local output="["
+  local first=true
+
+  for engine in claude opencode ollama aider; do
+    local info
+    info=$(ai_get_engine_info "$engine")
+
+    [[ "$first" == "true" ]] && first=false || output+=","
+    output+="$info"
+  done
+
+  output+="]"
+  echo "$output"
+}
+
+# Get current configuration as JSON
+# Usage: ai_get_config
+# Returns: JSON object with current configuration
+ai_get_config() {
+  local current_engine
+  current_engine=$(ai_detect_engine)
+
+  local timeout="${AI_TIMEOUT:-300}"
+  local verbose="${AI_VERBOSE:-0}"
+  local engine="${AI_ENGINE:-}"
+  local model="${AI_MODEL:-}"
+  local working_dir="${AI_WORKING_DIR:-}"
+  local retry_count="${AI_RETRY_COUNT:-3}"
+  local retry_delay="${AI_RETRY_DELAY:-5}"
+  local retry_backoff="${AI_RETRY_BACKOFF:-2}"
+
+  # Escape special characters
+  engine="${engine//\"/\\\"}"
+  model="${model//\"/\\\"}"
+  working_dir="${working_dir//\"/\\\"}"
+
+  cat << EOF
+{"version":"$AI_RUNNER_VERSION","config":{"engine":"$engine","model":"$model","timeout":$timeout,"verbose":$verbose,"working_dir":"$working_dir","retry_count":$retry_count,"retry_delay":$retry_delay,"retry_backoff":$retry_backoff},"detected_engine":"$current_engine"}
+EOF
+}
+
+# Get status as JSON (for monitoring)
+# Usage: ai_get_status
+# Returns: JSON object with full status
+ai_get_status() {
+  local installed_engines
+  installed_engines=$(ai_get_installed_engines)
+  local config
+  config=$(ai_get_config)
+  local available
+  available=$(ai_available && echo "true" || echo "false")
+
+  cat << EOF
+{"status":{"available":$available,"installed_engines":$installed_engines,"config":$config}}
+EOF
+}
+
+#------------------------------------------------------------------------------
 # Core Functions
 #------------------------------------------------------------------------------
 

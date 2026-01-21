@@ -99,6 +99,46 @@ export AI_RETRY_BACKOFF=2
 export AI_PROGRESS_CALLBACK=my_progress_handler
 ```
 
+## Structured API
+
+Query engines and models programmatically:
+
+```bash
+#!/usr/bin/env bash
+source ~/dev/ai-runner/ai-runner.sh
+
+# Get all available engines as JSON
+ai_get_engines
+# Output: ["claude","opencode","ollama","aider"]
+
+# Get models for a specific engine
+ai_get_models "claude"
+# Output: ["haiku","sonnet","opus"]
+
+ai_get_models "ollama"
+# Output: ["llama3.2","llama3.1","mistral","codellama","deepseek-coder"]
+
+# Get installed engines
+ai_get_installed_engines
+# Output: ["claude","ollama"]
+
+# Get detailed engine info
+ai_get_engine_info "ollama"
+# Output: {"engine":"ollama","installed":true,"version":"ollama version 0.1.0","models":["llama3.2",...]}
+
+# Get all engines info
+ai_get_all_engines_info
+# Output: [{"engine":"claude",...},{"engine":"ollama",...},...]
+
+# Get current configuration
+ai_get_config
+# Output: {"version":"0.5.0","config":{"engine":"","model":"",...}}
+
+# Get full status
+ai_get_status
+# Output: {"status":{"available":true,"installed_engines":[...],"config":...}}
+```
+
 ### Config File
 
 Create `~/.ai-runner.conf`:

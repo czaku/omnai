@@ -64,12 +64,12 @@ ai-runner is a **universal bash library** for running prompts through local AI a
 
 **Requirements:**
 - [x] All v0.2-0.5 features complete
-- [x] Comprehensive test suite (52 tests)
-- [ ] Full documentation (README, API reference)
+- [x] Comprehensive test suite (75 tests)
+- [x] Full documentation (README, API reference)
 - [x] Example integrations (ralfiepretzel, aixam, rec.ai)
 - [x] Changelog
 - [x] Semantic versioning commitment
-- [ ] ShellCheck validation
+- [x] ShellCheck validation
 
 ---
 
