@@ -23,6 +23,8 @@
 #   AI_VERBOSE    - Enable verbose logging (0, 1, or 2 for very verbose)
 #   AI_TIMEOUT    - Timeout in seconds (default: 300)
 
+AI_RUNNER_VERSION="0.5.0"
+
 #------------------------------------------------------------------------------
 # Exit Code Semantics (v0.2.0)
 #------------------------------------------------------------------------------
@@ -113,6 +115,153 @@ ai_log_debug() {
   if [[ "${AI_VERBOSE:-0}" -ge 2 ]]; then
     echo -e "${_AI_CYAN}[ai-runner:debug]${_AI_NC} $*" >&2
   fi
+}
+
+#------------------------------------------------------------------------------
+# Error Handling (v0.5.0)
+#------------------------------------------------------------------------------
+
+# Error recovery suggestions
+declare -A AI_ERROR_SUGGESTIONS=(
+  ["rate_limit"]="Rate limit reached. Try reducing request frequency or upgrading your plan."
+  ["quota_exceeded"]="API quota exceeded. Check your usage or increase quota."
+  ["authentication"]="Authentication failed. Check your API key or credentials."
+  ["permission_denied"]="Permission denied. Verify access rights for this resource."
+  ["not_found"]="Resource not found. Check the identifier or path."
+  ["invalid_request"]="Invalid request. Review your prompt and parameters."
+  ["model_not_found"]="Model not found. Check model name or pull it first."
+  ["connection_failed"]="Connection failed. Check network or server status."
+  ["timeout"]="Request timed out. Try a shorter prompt or increase AI_TIMEOUT."
+  ["context_length"]="Context too long. Shorten your prompt or reduce file attachments."
+)
+
+# Detect error type from provider output
+# Usage: ai_detect_error "provider" "output"
+ai_detect_error() {
+  local provider="$1"
+  local output="$2"
+  local error_type="unknown"
+
+  case "$provider" in
+    claude|claude-code)
+      if echo "$output" | grep -qi "rate limit"; then
+        error_type="rate_limit"
+      elif echo "$output" | grep -qi "quota"; then
+        error_type="quota_exceeded"
+      elif echo "$output" | grep -qi "authentication\|auth\|api key"; then
+        error_type="authentication"
+      elif echo "$output" | grep -qi "permission\|access"; then
+        error_type="permission_denied"
+      elif echo "$output" | grep -qi "not found"; then
+        error_type="not_found"
+      elif echo "$output" | grep -qi "invalid"; then
+        error_type="invalid_request"
+      fi
+      ;;
+    ollama)
+      if echo "$output" | grep -qi "not found\|model not found"; then
+        error_type="model_not_found"
+      elif echo "$output" | grep -qi "connection\|network"; then
+        error_type="connection_failed"
+      elif echo "$output" | grep -qi "too long\|context length"; then
+        error_type="context_length"
+      elif echo "$output" | grep -qi "timeout"; then
+        error_type="timeout"
+      fi
+      ;;
+    aider)
+      if echo "$output" | grep -qi "not a git"; then
+        error_type="permission_denied"
+      elif echo "$output" | grep -qi "context"; then
+        error_type="context_length"
+      fi
+      ;;
+    opencode)
+      if echo "$output" | grep -qi "authentication"; then
+        error_type="authentication"
+      elif echo "$output" | grep -qi "rate"; then
+        error_type="rate_limit"
+      fi
+      ;;
+  esac
+
+  echo "$error_type"
+}
+
+# Get error recovery suggestion
+# Usage: ai_error_suggestion "error_type"
+ai_error_suggestion() {
+  local error_type="$1"
+  local suggestion="${AI_ERROR_SUGGESTIONS[$error_type]:-No specific suggestion available.}"
+
+  # Add general suggestions
+  case "$error_type" in
+    unknown)
+      suggestion+=" Check the output above for details. Enable verbose mode (-v) for more information."
+      ;;
+    timeout)
+      suggestion+=" Set AI_TIMEOUT=600 for longer operations."
+      ;;
+    rate_limit)
+      suggestion+=" Set AI_RETRY_DELAY=10 and AI_RETRY_COUNT=5 to handle rate limits gracefully."
+      ;;
+  esac
+
+  echo "$suggestion"
+}
+
+# Handle error with recovery suggestion
+# Usage: ai_handle_error "provider" "exit_code" "output"
+ai_handle_error() {
+  local provider="$1"
+  local exit_code="$2"
+  local output="$3"
+
+  local error_type
+  error_type=$(ai_detect_error "$provider" "$output")
+
+  ai_log_error "Error from $provider (exit code: $exit_code)"
+
+  if [[ "$error_type" != "unknown" ]]; then
+    ai_log_error "Type: $error_type"
+  fi
+
+  local suggestion
+  suggestion=$(ai_error_suggestion "$error_type")
+  ai_log_warning "$suggestion"
+
+  # Return standardized exit code
+  case "$exit_code" in
+    124) return $AI_EXIT_TIMEOUT ;;
+    1)
+      case "$error_type" in
+        rate_limit|quota_exceeded) return $AI_EXIT_PROVIDER_ERROR ;;
+        authentication|permission_denied) return $AI_EXIT_INVALID_INPUT ;;
+        *) return $AI_EXIT_PROVIDER_ERROR ;;
+      esac
+      ;;
+    *) return $AI_EXIT_PROVIDER_ERROR ;;
+  esac
+}
+
+# Run with error handling
+# Usage: ai_run_with_error_handling "prompt"
+ai_run_with_error_handling() {
+  local prompt="$1"
+  local engine
+  engine=$(ai_detect_engine)
+
+  local result exit_code output
+  output=$(ai_run "$prompt" 2>&1)
+  exit_code=$?
+
+  if [[ $exit_code -ne 0 ]]; then
+    ai_handle_error "$engine" "$exit_code" "$output"
+    return $?
+  fi
+
+  echo "$output"
+  return 0
 }
 
 #------------------------------------------------------------------------------

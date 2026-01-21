@@ -417,6 +417,66 @@ test_environment
 sleep 0.3
 
 # ==============================================================================
+# Test Suite: Error Handling (v0.5.0)
+# ==============================================================================
+
+test_error_handling() {
+  print_header "Error Handling Tests (v0.5.0)"
+
+  source "$AI_RUNNER"
+
+  print_test "Error suggestions map exists"
+  local suggestion
+  suggestion=$(ai_error_suggestion "rate_limit")
+  assert_contains "$suggestion" "Rate limit" "Rate limit suggestion exists"
+
+  print_test "Unknown error has fallback suggestion"
+  suggestion=$(ai_error_suggestion "unknown")
+  assert_contains "$suggestion" "No specific suggestion" "Unknown error has fallback"
+
+  print_test "Timeout error has suggestion"
+  suggestion=$(ai_error_suggestion "timeout")
+  assert_contains "$suggestion" "AI_TIMEOUT" "Timeout suggestion mentions AI_TIMEOUT"
+
+  print_test "Rate limit error has retry suggestion"
+  suggestion=$(ai_error_suggestion "rate_limit")
+  assert_contains "$suggestion" "AI_RETRY" "Rate limit suggests retry settings"
+
+  print_test "Error detection function exists"
+  type ai_detect_error | grep -q "function" && print_pass "ai_detect_error() exists"
+
+  print_test "Error handling function exists"
+  type ai_handle_error | grep -q "function" && print_pass "ai_handle_error() exists"
+
+  print_test "Error run wrapper exists"
+  type ai_run_with_error_handling | grep -q "function" && print_pass "ai_run_with_error_handling() exists"
+
+  print_test "Claude error detection - rate limit"
+  local error_type
+  error_type=$(ai_detect_error "claude" "Error: rate limit exceeded")
+  assert_equals "$error_type" "rate_limit" "Detects Claude rate limit"
+
+  print_test "Claude error detection - authentication"
+  error_type=$(ai_detect_error "claude" "Authentication failed: invalid API key")
+  assert_equals "$error_type" "authentication" "Detects Claude authentication error"
+
+  print_test "Ollama error detection - model not found"
+  error_type=$(ai_detect_error "ollama" "Error: model not found: llama999")
+  assert_equals "$error_type" "model_not_found" "Detects Ollama model not found"
+
+  print_test "Ollama error detection - connection failed"
+  error_type=$(ai_detect_error "ollama" "connection failed: connection refused")
+  assert_equals "$error_type" "connection_failed" "Detects Ollama connection error"
+
+  print_test "Aider error detection - context length"
+  error_type=$(ai_detect_error "aider" "Context too long for model")
+  assert_equals "$error_type" "context_length" "Detects Aider context length error"
+}
+
+test_error_handling
+sleep 0.3
+
+# ==============================================================================
 # Summary
 # ==============================================================================
 
