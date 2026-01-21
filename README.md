@@ -13,13 +13,30 @@ Universal local AI agent runner for bash scripts. A lightweight library for runn
 
 ## Installation
 
-```bash
-# Clone to your dev folder
-git clone git@github.com:czaku/ai-runner.git ~/dev/ai-runner
+### Private Repository
 
-# Or just copy the single file
-curl -O https://raw.githubusercontent.com/czaku/ai-runner/main/ai-runner.sh
-chmod +x ai-runner.sh
+```bash
+# Clone to your dev folder (requires SSH key access)
+git clone git@github.com:czaku/ai-runner.git ~/dev/ai-runner
+source ~/dev/ai-runner/ai-runner.sh
+```
+
+### Release Archive
+
+```bash
+# Download and extract v1.0.0-rc1
+cd ~
+curl -L https://github.com/czaku/ai-runner/releases/download/v1.0.0-rc1/ai-runner-v1.0.0-rc1.tar.gz -o ai-runner.tar.gz
+tar -xzf ai-runner.tar.gz
+cd ai-runner-*
+source ai-runner.sh
+```
+
+### Quick Install (one-liner)
+
+```bash
+# Source directly from git (updates from HEAD)
+source <(curl -s https://raw.githubusercontent.com/czaku/ai-runner/main/ai-runner.sh)
 ```
 
 ## Quick Start
