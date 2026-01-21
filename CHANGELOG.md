@@ -3,14 +3,32 @@
 All notable changes to ai-runner are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+and this project adheres to [Semantic Versioning](https://sememver.org/spec/v2.0.0.html).
 
 ## [Unreleased] - v0.6.0
 
 ### Planned
 - Aixam integration example
 - Provider-specific error mapping improvements
-- ShellCheck CI integration
+
+## [v1.0.0-rc2] - January 2026
+
+### Added
+- Qwen-Code support (`qwen` engine)
+- Cursor agent support (`cursor` engine)
+- OpenAI Codex support (`codex` engine)
+- Goose CLI support (`goose` engine)
+- GitHub Copilot CLI support (`copilot` engine)
+- Total of 9 supported AI backends
+
+## [v1.0.0-rc1] - January 2026
+
+### Added
+- Structured JSON API (ai_get_engines, ai_get_models, ai_get_status, ai_get_config)
+- Config file support (~/.ai-runner.conf)
+- Error handling with provider-specific detection
+- 75 passing tests
+- ShellCheck validated
 
 ## [v0.5.0] - January 2026
 

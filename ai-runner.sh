@@ -53,10 +53,15 @@ ai_exit_code_name() {
 
 # Supported engines and their known models
 declare -A AI_KNOWN_ENGINES=(
-  [claude]="Claude CLI (Anthropic)"
-  [opencode]="OpenCode CLI"
-  [ollama]="Ollama (local LLMs)"
-  [aider]="Aider (AI pair programming)"
+  [claude]="Anthropic Claude CLI"
+  [opencode]="OpenCode AI Assistant"
+  [ollama]="Ollama Local LLMs"
+  [aider]="Aider AI Pair Programming"
+  [qwen]="Qwen-Code CLI"
+  [cursor]="Cursor Agent"
+  [codex]="OpenAI Codex CLI"
+  [goose]="Goose CLI"
+  [copilot]="GitHub Copilot CLI"
 )
 
 declare -A AI_KNOWN_MODELS=(
@@ -351,6 +356,11 @@ ai_validate_engine() {
     opencode) cmd="opencode" ;;
     ollama) cmd="ollama" ;;
     aider) cmd="aider" ;;
+    qwen) cmd="qwen" ;;
+    cursor) cmd="cursor" ;;
+    codex) cmd="codex" ;;
+    goose) cmd="goose" ;;
+    copilot) cmd="gh" ;;
   esac
 
   if ! command -v "$cmd" &>/dev/null; then
@@ -368,6 +378,21 @@ ai_validate_engine() {
         ;;
       aider)
         echo "Install Aider: pip install aider-chat" >&2
+        ;;
+      qwen)
+        echo "Install Qwen-Code: pip install qwen-code or see https://github.com/QwenLM/Qwen-Agent" >&2
+        ;;
+      cursor)
+        echo "Install Cursor: https://cursor.sh" >&2
+        ;;
+      codex)
+        echo "Install Codex CLI: npm install -g @openai/codex" >&2
+        ;;
+      goose)
+        echo "Install Goose: https://github.com/block/goose" >&2
+        ;;
+      copilot)
+        echo "Install GitHub CLI with Copilot: brew install gh && gh extension install copilot-cli" >&2
         ;;
     esac
     return 2
@@ -900,6 +925,21 @@ ai_run() {
     aider)
       _ai_run_aider "$prompt" "$output_format"
       ;;
+    qwen)
+      _ai_run_qwen "$prompt" "$output_format"
+      ;;
+    cursor)
+      _ai_run_cursor "$prompt" "$output_format"
+      ;;
+    codex)
+      _ai_run_codex "$prompt" "$output_format"
+      ;;
+    goose)
+      _ai_run_goose "$prompt" "$output_format"
+      ;;
+    copilot)
+      _ai_run_copilot "$prompt" "$output_format"
+      ;;
     none)
       ai_log_error "No AI backend available"
       return 1
@@ -1115,6 +1155,92 @@ _ai_run_aider() {
   ai_log_debug "Executing: aider ${args[*]:0:50}..."
 
   timeout "${AI_TIMEOUT:-300}" aider "${args[@]}"
+}
+
+# Qwen-Code runner
+_ai_run_qwen() {
+  local prompt="$1"
+  local output_format="$2"
+
+  local cmd="qwen"
+  if [[ -n "${AI_MODEL:-}" ]]; then
+    cmd="$cmd --model $AI_MODEL"
+    ai_log_debug "Using model: $AI_MODEL"
+  fi
+
+  cmd="$cmd -p \"$prompt\""
+
+  ai_log_debug "Executing: $cmd"
+
+  eval "$cmd"
+}
+
+# Cursor runner
+_ai_run_cursor() {
+  local prompt="$1"
+  local output_format="$2"
+
+  local cmd="agent --print --force --output-format stream-json"
+  if [[ -n "${AI_MODEL:-}" ]]; then
+    cmd="$cmd --model $AI_MODEL"
+    ai_log_debug "Using model: $AI_MODEL"
+  fi
+
+  cmd="$cmd \"$prompt\""
+
+  ai_log_debug "Executing: $cmd"
+
+  eval "$cmd"
+}
+
+# Codex runner
+_ai_run_codex() {
+  local prompt="$1"
+  local output_format="$2"
+
+  local cmd="codex exec --full-auto --json"
+  if [[ -n "${AI_MODEL:-}" ]]; then
+    cmd="$cmd --model $AI_MODEL"
+    ai_log_debug "Using model: $AI_MODEL"
+  fi
+
+  cmd="$cmd -p \"$prompt\""
+
+  ai_log_debug "Executing: $cmd"
+
+  eval "$cmd"
+}
+
+# Goose runner
+_ai_run_goose() {
+  local prompt="$1"
+  local output_format="$2"
+
+  local cmd="goose run --no-confirm"
+  if [[ -n "${AI_MODEL:-}" ]]; then
+    cmd="$cmd --model $AI_MODEL"
+    ai_log_debug "Using model: $AI_MODEL"
+  fi
+
+  cmd="$cmd \"$prompt\""
+
+  ai_log_debug "Executing: $cmd"
+
+  eval "$cmd"
+}
+
+# Copilot runner (gh copilot)
+_ai_run_copilot() {
+  local prompt="$1"
+  local output_format="$2"
+
+  # gh copilot uses 'gh copilot explain' or 'gh copilot suggest'
+  # For prompts, we use 'gh copilot suggest'
+  local cmd="gh copilot suggest \"$prompt\""
+
+  ai_log_debug "Executing: $cmd"
+
+  eval "$cmd"
 }
 
 #------------------------------------------------------------------------------

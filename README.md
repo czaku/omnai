@@ -10,6 +10,11 @@ Universal local AI agent runner for bash scripts. A lightweight library for runn
 | OpenCode | `opencode` | Alternative AI coding assistant |
 | Ollama | `ollama` | Local LLMs (llama3.2, mistral, etc.) |
 | Aider | `aider` | AI pair programming |
+| Qwen-Code | `qwen` | Alibaba's AI coding assistant |
+| Cursor | `cursor` | Cursor AI editor agent |
+| Codex | `codex` | OpenAI Codex CLI |
+| Goose | `goose` | Block's AI CLI |
+| Copilot | `gh copilot` | GitHub Copilot CLI |
 
 ## Installation
 

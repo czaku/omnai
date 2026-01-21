@@ -70,6 +70,11 @@ ai-runner is a **universal bash library** for running prompts through local AI a
 - [x] Changelog
 - [x] Semantic versioning commitment
 - [x] ShellCheck validation
+- [x] Qwen-Code support
+- [x] Cursor support
+- [x] Codex support
+- [x] Goose support
+- [x] Copilot support
 
 ---
 
