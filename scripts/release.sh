@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# release.sh - Create and publish omni-ai releases
+# release.sh - Create and publish omnai releases
 
 set -e
 
-VERSION_FILE="omni-ai.sh"
+VERSION_FILE="omnai.sh"
 CHANGELOG="CHANGELOG.md"
-REPO="czaku/omni-ai"
+REPO="czaku/omnai"
 
 usage() {
     cat << EOF
 Usage: $0 <version> [--draft]
 
-Create a GitHub release for omni-ai.
+Create a GitHub release for omnai.
 
 Arguments:
     version     Version tag (e.g., v1.0.0, v1.0.0-rc1, v1.1.0-beta)
@@ -33,15 +33,15 @@ create_release() {
     echo "Creating release $version..."
 
     # Create tarball
-    local tarball="omni-ai-${version}.tar.gz"
-    git archive --prefix="omni-ai-${version}/" -o "$tarball" HEAD
+    local tarball="omnai-${version}.tar.gz"
+    git archive --prefix="omnai-${version}/" -o "$tarball" HEAD
 
     # Calculate SHA256
     local sha=$(shasum -a 256 "$tarball" | cut -d' ' -f1)
     echo "SHA256: $sha"
 
     # Update version in source file
-    sed -i.bak "s/AI_RUNNER_VERSION=\"[^\"]*\"/AI_RUNNER_VERSION=\"${version#v}\"/" "$VERSION_FILE"
+    sed -i.bak "s/OMNAI_VERSION=\"[^\"]*\"/OMNAI_VERSION=\"${version#v}\"/" "$VERSION_FILE"
     rm -f "${VERSION_FILE}.bak"
 
     # Update version in CHANGELOG
@@ -60,7 +60,7 @@ create_release() {
     fi
 
     gh release create "$version" \
-        --title "omni-ai ${version}" \
+        --title "omnai ${version}" \
         --notes "See CHANGELOG.md for details" \
         $draft_flag \
         "$tarball"

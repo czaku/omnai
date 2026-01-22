@@ -1,4 +1,4 @@
-# omni-ai
+# omnai
 
 Universal local AI agent runner for bash scripts. A lightweight library for running prompts through various AI backends with retries, error handling, and progress callbacks.
 
@@ -22,8 +22,8 @@ Universal local AI agent runner for bash scripts. A lightweight library for runn
 
 ```bash
 # Clone to your dev folder (requires SSH key access)
-git clone git@github.com:czaku/omni-ai.git ~/dev/omni-ai
-source ~/dev/omni-ai/omni-ai.sh
+git clone git@github.com:czaku/omnai.git ~/dev/omnai
+source ~/dev/omnai/omnai.sh
 ```
 
 ### Release Archive
@@ -31,17 +31,17 @@ source ~/dev/omni-ai/omni-ai.sh
 ```bash
 # Download and extract v1.0.0-rc1
 cd ~
-curl -L https://github.com/czaku/omni-ai/releases/download/v1.0.0-rc1/omni-ai-v1.0.0-rc1.tar.gz -o omni-ai.tar.gz
-tar -xzf omni-ai.tar.gz
-cd omni-ai-*
-source omni-ai.sh
+curl -L https://github.com/czaku/omnai/releases/download/v1.0.0-rc1/omnai-v1.0.0-rc1.tar.gz -o omnai.tar.gz
+tar -xzf omnai.tar.gz
+cd omnai-*
+source omnai.sh
 ```
 
 ### Quick Install (one-liner)
 
 ```bash
 # Source directly from git (updates from HEAD)
-source <(curl -s https://raw.githubusercontent.com/czaku/omni-ai/main/omni-ai.sh)
+source <(curl -s https://raw.githubusercontent.com/czaku/omnai/main/omnai.sh)
 ```
 
 ## Quick Start
@@ -50,27 +50,27 @@ source <(curl -s https://raw.githubusercontent.com/czaku/omni-ai/main/omni-ai.sh
 
 ```bash
 # Run a prompt directly
-./omni-ai.sh "What is 2+2?"
+./omnai.sh "What is 2+2?"
 
 # Specify engine and model
-./omni-ai.sh --engine claude --model sonnet "Explain quantum computing"
-./omni-ai.sh --engine ollama --model llama3.2 "Write a haiku"
+./omnai.sh --engine claude --model sonnet "Explain quantum computing"
+./omnai.sh --engine ollama --model llama3.2 "Write a haiku"
 
 # Verbose mode (use twice for debug)
-./omni-ai.sh -v -v "Debug this"
+./omnai.sh -v -v "Debug this"
 
 # List all installed engines and models
-./omni-ai.sh --list
+./omnai.sh --list
 
 # Show help
-./omni-ai.sh --help
+./omnai.sh --help
 ```
 
 ### Library Usage
 
 ```bash
 #!/usr/bin/env bash
-source ~/dev/omni-ai/omni-ai.sh
+source ~/dev/omnai/omnai.sh
 
 # Simple prompt
 result=$(ai_run "What is 2+2?")
@@ -127,7 +127,7 @@ Query engines and models programmatically:
 
 ```bash
 #!/usr/bin/env bash
-source ~/dev/omni-ai/omni-ai.sh
+source ~/dev/omnai/omnai.sh
 
 # Get all available engines as JSON
 ai_get_engines
@@ -163,10 +163,10 @@ ai_get_status
 
 ### Config File
 
-Create `~/.omni-ai.conf`:
+Create `~/.omnai.conf`:
 
 ```bash
-# omni-ai configuration
+# omnai configuration
 export AI_ENGINE=claude
 export AI_MODEL=sonnet
 export AI_VERBOSE=0
@@ -179,15 +179,15 @@ export AI_RETRY_BACKOFF=2
 CLI commands:
 ```bash
 # Save current config
-omni-ai --save-config
+omnai --save-config
 
 # Reload config
-omni-ai --load-config
+omnai --load-config
 ```
 
 Or load in your script:
 ```bash
-source ~/dev/omni-ai/omni-ai.sh
+source ~/dev/omnai/omnai.sh
 ai_load_config  # Config is auto-loaded on source
 ```
 
@@ -248,13 +248,13 @@ ai_load_config  # Config is auto-loaded on source
 | 1 | USER_ABORT | User cancelled (Ctrl+C) |
 | 2 | PROVIDER_ERROR | Provider error (rate limit, API error) |
 | 3 | INVALID_INPUT | Bad prompt or configuration |
-| 4 | INTERNAL_ERROR | omni-ai bug |
+| 4 | INTERNAL_ERROR | omnai bug |
 | 124 | TIMEOUT | Timed out |
 
 ### Get Exit Code Name
 
 ```bash
-source omni-ai.sh
+source omnai.sh
 ai_exit_code_name 0  # Returns: SUCCESS
 ai_exit_code_name 124  # Returns: TIMEOUT
 ```
@@ -280,7 +280,7 @@ Focus on:
 
 Usage:
 ```bash
-source omni-ai.sh
+source omnai.sh
 prompt=$(ai_build_prompt "./prompts" "code-review" \
   "CODE=$code" \
   "LANGUAGE=python")
@@ -293,7 +293,7 @@ Monitor AI operations in real-time:
 
 ```bash
 #!/usr/bin/env bash
-source ~/dev/omni-ai/omni-ai.sh
+source ~/dev/omnai/omnai.sh
 
 my_progress_handler() {
   local event="$1"  # started, streaming, completed, error
@@ -325,7 +325,7 @@ Get intelligent error recovery suggestions:
 
 ```bash
 #!/usr/bin/env bash
-source ~/dev/omni-ai/omni-ai.sh
+source ~/dev/omnai/omnai.sh
 
 # Run with automatic error handling
 result=$(ai_run_with_error_handling "Your prompt here")
@@ -368,7 +368,7 @@ Automatically retry failed requests:
 
 ```bash
 #!/usr/bin/env bash
-source ~/dev/omni-ai/omni-ai.sh
+source ~/dev/omnai/omnai.sh
 
 # Configure retry
 export AI_RETRY_COUNT=5
@@ -385,7 +385,7 @@ Attach files to prompts:
 
 ```bash
 #!/usr/bin/env bash
-source ~/dev/omni-ai/omni-ai.sh
+source ~/dev/omnai/omnai.sh
 
 # Attach multiple files
 ai_run_with_files "Implement this feature" \
@@ -399,7 +399,7 @@ ai_run_with_files "Implement this feature" \
 ### With ralfiepretzel
 
 ```bash
-source ~/dev/omni-ai/omni-ai.sh
+source ~/dev/omnai/omnai.sh
 
 execute_prd_in_worktree() {
   local prd="$1"
@@ -418,7 +418,7 @@ execute_prd_in_worktree() {
 
 ```bash
 #!/usr/bin/env bash
-source ~/dev/omni-ai/omni-ai.sh
+source ~/dev/omnai/omnai.sh
 
 analyze_quiz_question() {
   local question="$1"
@@ -439,7 +439,7 @@ analyze_quiz_question() {
 
 ```bash
 #!/usr/bin/env bash
-source ~/dev/omni-ai/omni-ai.sh
+source ~/dev/omnai/omnai.sh
 
 analyze_recording() {
   local transcript="$1"
@@ -461,10 +461,10 @@ bash tests/run_tests.sh
 python3 tests/test_integration.py
 
 # ShellCheck (requires shellcheck)
-shellcheck -x -s bash omni-ai.sh
+shellcheck -x -s bash omnai.sh
 
 # Enable bash completion
-source ~/dev/omni-ai/completion.bash
+source ~/dev/omnai/completion.bash
 ```
 
 ## Version History
@@ -480,6 +480,6 @@ MIT
 1. Fork the repository
 2. Create feature branch: `git checkout -b feat/feature-name`
 3. Make changes with tests
-4. Ensure ShellCheck passes: `shellcheck omni-ai.sh`
+4. Ensure ShellCheck passes: `shellcheck omnai.sh`
 5. Run tests: `bash tests/run_tests.sh`
 6. Submit PR

@@ -1,6 +1,6 @@
 [project]
-name = "omni-ai"
-version = "0.1.0"
+name = "omnai"
+version = "1.0.0-rc3"
 description = "Unified AI runner for Claude, OpenCode, Ollama, and more"
 requires-python = ">=3.10"
 
