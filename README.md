@@ -489,3 +489,153 @@ MIT
 4. Ensure ShellCheck passes: `shellcheck omnai.sh`
 5. Run tests: `bash tests/run_tests.sh`
 6. Submit PR
+
+---
+
+## Python Module: Model Configurations
+
+omnai now includes a Python module (`src/omnai`) with comprehensive model configurations and metadata for decision-making.
+
+### Installation
+
+```bash
+pip install -e .
+```
+
+Or add to your `requirements.txt`:
+```
+omnai @ git+https://github.com/czaku/omnai.git
+```
+
+### Features
+
+- **20+ model configurations** across all supported engines
+- **Rich metadata**: cost, speed, quality, best_for, free_tier, cost_per_mtok
+- **Query API**: Find models by criteria (cost, speed, use case)
+- **Extension API**: Register custom model configs
+
+### Quick Start
+
+```python
+from omnai import get_config, find_configs
+
+# Get specific model config
+config = get_config("sonnet-4.5")
+print(f"Cost: ${config['cost_per_mtok']['output']}/M tokens")
+print(f"Best for: {', '.join(config['best_for'])}")
+print(f"Speed: {config['speed']}, Quality: {config['quality']}")
+
+# Find free models for coding
+free_coding = find_configs(cost="free", best_for="coding")
+for model in free_coding:
+    print(f"{model['full_name']}: {model['notes']}")
+
+# Find fast, cheap models
+fast_cheap = find_configs(
+    cost=["free", "cheap"],
+    speed=["very-fast", "fast"]
+)
+```
+
+### Supported Models
+
+#### Claude (claude-code + claude API)
+- **Sonnet 4.5** - Best balance ($3/$15/M tokens, fast, excellent)
+- **Opus 4.5** - Most capable ($15/$75/M tokens, slow, excellent)
+- **Haiku 4** - Fast & cheap ($0.8/$4/M tokens, very-fast, good)
+
+#### Ollama (Local Inference - Free)
+- **Qwen 2.5 Coder** (7B/14B/32B) - Recommended for coding
+- **DeepSeek Coder V2** (16B) - Strong alternative
+- **Code Llama** (7B) - Legacy support
+- **Llama 3.2** (3B) - Lightweight, simple tasks
+
+#### OpenAI
+- **GPT-4o** - Latest ($2.5/$10/M tokens, fast, excellent)
+- **GPT-4o Mini** - Cheap & fast ($0.15/$0.6/M tokens, very-fast, good)
+- **GPT-4 Turbo** - Previous gen ($10/$30/M tokens, medium, excellent)
+- **GPT-3.5 Turbo** - Legacy ($0.5/$1.5/M tokens, very-fast, fair)
+
+### API Reference
+
+```python
+# Query functions
+get_config(model_id: str) -> dict | None
+list_configs(engine: str = None) -> list[dict]
+find_configs(
+    cost: str | list = None,
+    speed: str | list = None,
+    quality: str | list = None,
+    best_for: str | list = None,
+    free_tier: bool = None,
+    engine: str | list = None
+) -> list[dict]
+
+# Engine functions
+get_default_model(engine: str) -> str | None
+list_engines() -> list[dict]
+
+# Extension API
+register_config(model_id: str, config: dict, override: bool = False) -> bool
+list_custom_configs() -> list[dict]
+```
+
+### Metadata Fields
+
+Each model includes:
+- **cost**: `free` / `cheap` / `medium` / `expensive`
+- **cost_per_mtok**: `{"input": float, "output": float}` (USD per million tokens)
+- **free_tier**: `bool` - Whether model has free tier
+- **speed**: `very-fast` / `fast` / `medium` / `slow` / `very-slow`
+- **quality**: `excellent` / `good` / `fair` / `basic`
+- **best_for**: `list[str]` - Use cases (e.g., `["coding", "analysis"]`)
+- **notes**: `str` - Practical guidance and recommendations
+
+### Examples
+
+```python
+# Show cost warning before expensive operation
+config = get_config("opus-4.5")
+if config['cost'] == "expensive":
+    cost = config['cost_per_mtok']['output']
+    print(f"⚠️  Warning: This model costs ${cost}/M output tokens")
+
+# Find best local model for coding
+local_coding = find_configs(
+    engine="ollama",
+    best_for="coding",
+    quality=["excellent", "good"]
+)
+# Returns: Qwen 2.5 Coder 32B, 14B, 7B
+
+# Get default model for engine
+default = get_default_model("claude-code")  # "sonnet-4.5"
+
+# Register custom model
+register_config("my-local-model", {
+    "engine": "ollama",
+    "model": "my-model:latest",
+    "cost": "free",
+    "speed": "fast",
+    "quality": "good",
+    "best_for": ["coding"],
+    "notes": "Custom fine-tuned model"
+})
+```
+
+### Architecture
+
+The configs module serves three purposes:
+
+1. **Configuration file management** - Load/save model configs
+2. **Programmatic API** - Code that needs model metadata
+3. **Default resolution** - When user specifies `--engine` without `--model`
+
+**Not for CLI presets** - The CLI uses two-stage design:
+```bash
+omnai.sh --engine claude --model sonnet    # Flexible
+omnai.sh --ollama --model qwen2.5-coder:7b # Composable
+```
+
+This is cleaner than rigid presets like `--preset claude-sonnet-default`.
+
