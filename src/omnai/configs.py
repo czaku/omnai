@@ -10,7 +10,7 @@ Architecture:
 
 Example:
     >>> from omnai import get_config, find_configs
-    >>> config = get_config("claude-sonnet-4.5")
+    >>> config = get_config("claude-sonnet-4-20250514")
     >>> print(f"Cost: {config['cost']}, Best for: {config['best_for']}")
     >>>
     >>> # Find free models good for coding
@@ -30,22 +30,30 @@ QualityLevel = Literal["excellent", "good", "fair", "basic"]
 #------------------------------------------------------------------------------
 
 ENGINE_CONFIGS = {
-    "claude-code": {
-        "name": "Claude Code",
-        "description": "Anthropic's Claude via official CLI tool",
-        "type": "cloud",
-        "requires_auth": True,
-        "supports_streaming": True,
-        "default_model": "sonnet-4.5",
-    },
     "claude": {
-        "name": "Claude API",
-        "description": "Anthropic's Claude via direct API",
+        "name": "Claude CLI",
+        "description": "Anthropic's Claude via CLI tool",
         "type": "cloud",
         "requires_auth": True,
-        "requires_api_key": True,
         "supports_streaming": True,
-        "default_model": "claude-sonnet-4-5-20250929",
+        "default_model": "claude-sonnet-4-20250514",
+        "aliases": ["claude-code"],  # claude-code is an alias for claude
+    },
+    "opencode": {
+        "name": "OpenCode",
+        "description": "Multi-provider AI tool (OpenAI, DeepSeek, MiniMax)",
+        "type": "cloud",
+        "requires_auth": True,
+        "supports_streaming": True,
+        "default_model": "gpt-4o",
+    },
+    "codex": {
+        "name": "Codex CLI",
+        "description": "OpenAI Codex CLI (supports multiple providers)",
+        "type": "cloud",
+        "requires_auth": True,
+        "supports_streaming": True,
+        "default_model": "deepseek-v3",
     },
     "ollama": {
         "name": "Ollama",
@@ -55,14 +63,45 @@ ENGINE_CONFIGS = {
         "supports_streaming": True,
         "default_model": "qwen2.5-coder:7b",
     },
-    "openai": {
-        "name": "OpenAI",
-        "description": "OpenAI's GPT models via API",
+    "aider": {
+        "name": "Aider",
+        "description": "AI pair programming assistant",
         "type": "cloud",
         "requires_auth": True,
-        "requires_api_key": True,
         "supports_streaming": True,
-        "default_model": "gpt-4o",
+        "default_model": None,  # Configured via .aider.conf.yml
+    },
+    "qwen": {
+        "name": "Qwen-Code CLI",
+        "description": "Qwen AI coding assistant",
+        "type": "cloud",
+        "requires_auth": True,
+        "supports_streaming": True,
+        "default_model": None,
+    },
+    "cursor": {
+        "name": "Cursor Agent",
+        "description": "Cursor AI editor agent",
+        "type": "cloud",
+        "requires_auth": True,
+        "supports_streaming": True,
+        "default_model": None,
+    },
+    "goose": {
+        "name": "Goose CLI",
+        "description": "Block's Goose AI assistant",
+        "type": "cloud",
+        "requires_auth": True,
+        "supports_streaming": True,
+        "default_model": None,
+    },
+    "copilot": {
+        "name": "GitHub Copilot CLI",
+        "description": "GitHub Copilot command-line interface",
+        "type": "cloud",
+        "requires_auth": True,
+        "supports_streaming": True,
+        "default_model": None,
     },
 }
 
@@ -72,12 +111,12 @@ ENGINE_CONFIGS = {
 
 MODEL_CONFIGS = {
     #--------------------------------------------------------------------------
-    # Claude Models (claude-code engine)
+    # Claude Models (claude engine / claude-code CLI)
     #--------------------------------------------------------------------------
-    "sonnet-4.5": {
-        "engine": "claude-code",
-        "model": "sonnet-4.5",
-        "full_name": "Claude Sonnet 4.5",
+    "claude-sonnet-4-20250514": {
+        "engine": "claude",
+        "model": "claude-sonnet-4-20250514",
+        "full_name": "Claude Sonnet 4 (May 2025)",
         "context_window": 200_000,
         "default_temperature": 0.7,
 
@@ -91,10 +130,10 @@ MODEL_CONFIGS = {
         "notes": "Best balance of speed, quality, and cost. Recommended default.",
     },
 
-    "opus-4.5": {
-        "engine": "claude-code",
-        "model": "opus-4.5",
-        "full_name": "Claude Opus 4.5",
+    "claude-opus-4-20250514": {
+        "engine": "claude",
+        "model": "claude-opus-4-20250514",
+        "full_name": "Claude Opus 4 (May 2025)",
         "context_window": 200_000,
         "default_temperature": 0.7,
 
@@ -107,10 +146,26 @@ MODEL_CONFIGS = {
         "notes": "Use when quality matters more than cost/speed. 5x more expensive than Sonnet.",
     },
 
-    "haiku-4": {
-        "engine": "claude-code",
-        "model": "haiku-4",
-        "full_name": "Claude Haiku 4",
+    "claude-sonnet-3.7": {
+        "engine": "claude",
+        "model": "claude-sonnet-3.7",
+        "full_name": "Claude Sonnet 3.7",
+        "context_window": 200_000,
+        "default_temperature": 0.7,
+
+        "cost": "medium",
+        "cost_per_mtok": {"input": 3.0, "output": 15.0},
+        "free_tier": True,
+        "speed": "fast",
+        "quality": "excellent",
+        "best_for": ["coding", "analysis", "reasoning"],
+        "notes": "Previous generation Sonnet. Still very capable.",
+    },
+
+    "claude-haiku-3.5": {
+        "engine": "claude",
+        "model": "claude-haiku-3.5",
+        "full_name": "Claude Haiku 3.5",
         "context_window": 200_000,
         "default_temperature": 0.7,
 
@@ -124,12 +179,143 @@ MODEL_CONFIGS = {
     },
 
     #--------------------------------------------------------------------------
-    # Claude API Models
+    # OpenCode Models (OpenAI + others via opencode.ai)
     #--------------------------------------------------------------------------
-    "claude-sonnet-4-5-20250929": {
-        "engine": "claude",
-        "model": "claude-sonnet-4-5-20250929",
-        "full_name": "Claude Sonnet 4.5 (API)",
+    "gpt-4o": {
+        "engine": "opencode",
+        "model": "gpt-4o",
+        "full_name": "GPT-4o",
+        "context_window": 128_000,
+        "default_temperature": 1.0,
+
+        "cost": "medium",
+        "cost_per_mtok": {"input": 2.5, "output": 10.0},
+        "free_tier": False,
+        "speed": "fast",
+        "quality": "excellent",
+        "best_for": ["coding", "multimodal", "general", "reasoning"],
+        "notes": "OpenAI's flagship model. Optimized for speed and cost.",
+    },
+
+    "gpt-4-turbo": {
+        "engine": "opencode",
+        "model": "gpt-4-turbo",
+        "full_name": "GPT-4 Turbo",
+        "context_window": 128_000,
+        "default_temperature": 1.0,
+
+        "cost": "medium",
+        "cost_per_mtok": {"input": 10.0, "output": 30.0},
+        "free_tier": False,
+        "speed": "fast",
+        "quality": "excellent",
+        "best_for": ["coding", "analysis", "reasoning"],
+        "notes": "Previous generation GPT-4. Still very capable.",
+    },
+
+    "gpt-3.5-turbo": {
+        "engine": "opencode",
+        "model": "gpt-3.5-turbo",
+        "full_name": "GPT-3.5 Turbo",
+        "context_window": 16_385,
+        "default_temperature": 1.0,
+
+        "cost": "cheap",
+        "cost_per_mtok": {"input": 0.5, "output": 1.5},
+        "free_tier": False,
+        "speed": "very-fast",
+        "quality": "good",
+        "best_for": ["simple-tasks", "batch-processing", "prototyping"],
+        "notes": "Fastest and cheapest OpenAI model. Good for simple tasks.",
+    },
+
+    "o1-preview": {
+        "engine": "opencode",
+        "model": "o1-preview",
+        "full_name": "OpenAI o1 Preview",
+        "context_window": 128_000,
+        "default_temperature": 1.0,
+
+        "cost": "expensive",
+        "cost_per_mtok": {"input": 15.0, "output": 60.0},
+        "free_tier": False,
+        "speed": "slow",
+        "quality": "excellent",
+        "best_for": ["complex-reasoning", "math", "science", "research"],
+        "notes": "Advanced reasoning model. Uses extended thinking time for hard problems.",
+    },
+
+    "o1": {
+        "engine": "opencode",
+        "model": "o1",
+        "full_name": "OpenAI o1",
+        "context_window": 200_000,
+        "default_temperature": 1.0,
+
+        "cost": "expensive",
+        "cost_per_mtok": {"input": 15.0, "output": 60.0},
+        "free_tier": False,
+        "speed": "slow",
+        "quality": "excellent",
+        "best_for": ["complex-reasoning", "production", "high-stakes"],
+        "notes": "Production reasoning model with extended context.",
+    },
+
+    "deepseek-chat": {
+        "engine": "opencode",
+        "model": "deepseek-chat",
+        "full_name": "DeepSeek V3",
+        "context_window": 64_000,
+        "default_temperature": 1.0,
+
+        "cost": "cheap",
+        "cost_per_mtok": {"input": 0.14, "output": 0.28},
+        "free_tier": False,
+        "speed": "fast",
+        "quality": "excellent",
+        "best_for": ["coding", "reasoning", "cost-efficiency"],
+        "notes": "DeepSeek V3. Extremely cost-efficient with excellent coding ability.",
+    },
+
+    "minimax-m2.1": {
+        "engine": "opencode",
+        "model": "minimax-m2.1",
+        "full_name": "MiniMax M2.1",
+        "context_window": 32_000,
+        "default_temperature": 1.0,
+
+        "cost": "cheap",
+        "cost_per_mtok": {"input": 0.1, "output": 0.1},
+        "free_tier": False,
+        "speed": "fast",
+        "quality": "good",
+        "best_for": ["general", "cost-efficiency"],
+        "notes": "MiniMax's latest model. Very cost-efficient.",
+    },
+
+    #--------------------------------------------------------------------------
+    # Codex Models (OpenAI Codex CLI)
+    #--------------------------------------------------------------------------
+    "deepseek-v3": {
+        "engine": "codex",
+        "model": "deepseek-v3",
+        "full_name": "DeepSeek V3 (via Codex)",
+        "context_window": 64_000,
+        "default_temperature": 1.0,
+
+        "cost": "cheap",
+        "cost_per_mtok": {"input": 0.14, "output": 0.28},
+        "free_tier": False,
+        "speed": "fast",
+        "quality": "excellent",
+        "best_for": ["coding", "reasoning"],
+        "notes": "DeepSeek V3 via Codex CLI. Excellent for coding.",
+    },
+
+    "claude-sonnet-4": {
+        "engine": "codex",
+        "model": "claude-sonnet-4",
+        "full_name": "Claude Sonnet 4 (via Codex)",
         "context_window": 200_000,
         "default_temperature": 0.7,
 
@@ -138,24 +324,8 @@ MODEL_CONFIGS = {
         "free_tier": False,
         "speed": "fast",
         "quality": "excellent",
-        "best_for": ["coding", "analysis", "reasoning", "api-integration"],
-        "notes": "Direct API access. Same as claude-code sonnet-4.5 but requires API key.",
-    },
-
-    "claude-opus-4-5-20251101": {
-        "engine": "claude",
-        "model": "claude-opus-4-5-20251101",
-        "full_name": "Claude Opus 4.5 (API)",
-        "context_window": 200_000,
-        "default_temperature": 0.7,
-
-        "cost": "expensive",
-        "cost_per_mtok": {"input": 15.0, "output": 75.0},
-        "free_tier": False,
-        "speed": "slow",
-        "quality": "excellent",
-        "best_for": ["complex-reasoning", "research", "api-integration"],
-        "notes": "Direct API access. Most capable Claude model.",
+        "best_for": ["coding", "reasoning"],
+        "notes": "Claude Sonnet 4 accessed via Codex CLI.",
     },
 
     #--------------------------------------------------------------------------
@@ -203,10 +373,10 @@ MODEL_CONFIGS = {
         "cost": "free",
         "cost_per_mtok": {"input": 0, "output": 0},
         "free_tier": True,
-        "speed": "slow",  # Larger model
+        "speed": "slow",
         "quality": "excellent",
-        "best_for": ["coding", "complex-tasks", "offline-work"],
-        "notes": "Largest Qwen Coder model. Best quality. Requires ~24GB RAM.",
+        "best_for": ["coding", "complex-problems", "local-dev"],
+        "notes": "Largest Qwen coder. Best quality. Requires ~24GB RAM.",
     },
 
     "deepseek-coder-v2:16b": {
@@ -221,24 +391,8 @@ MODEL_CONFIGS = {
         "free_tier": True,
         "speed": "medium",
         "quality": "good",
-        "best_for": ["coding", "offline-work", "privacy"],
-        "notes": "Strong coding model. Alternative to Qwen. Requires ~12GB RAM.",
-    },
-
-    "llama3.2:3b": {
-        "engine": "ollama",
-        "model": "llama3.2:3b",
-        "full_name": "Llama 3.2 3B",
-        "context_window": 131_072,
-        "default_temperature": 0.7,
-
-        "cost": "free",
-        "cost_per_mtok": {"input": 0, "output": 0},
-        "free_tier": True,
-        "speed": "very-fast",
-        "quality": "fair",
-        "best_for": ["simple-tasks", "low-resource", "offline-work"],
-        "notes": "Lightweight model. Fast inference. Good for simple tasks. Requires ~3GB RAM.",
+        "best_for": ["coding", "local-dev"],
+        "notes": "DeepSeek's local coding model. Strong performance. Requires ~12GB RAM.",
     },
 
     "codellama:7b": {
@@ -251,79 +405,98 @@ MODEL_CONFIGS = {
         "cost": "free",
         "cost_per_mtok": {"input": 0, "output": 0},
         "free_tier": True,
-        "speed": "medium",
-        "quality": "fair",
-        "best_for": ["coding", "offline-work", "legacy-support"],
-        "notes": "Older coding model. Superseded by Qwen/DeepSeek but still useful. Requires ~6GB RAM.",
-    },
-
-    #--------------------------------------------------------------------------
-    # OpenAI Models
-    #--------------------------------------------------------------------------
-    "gpt-4o": {
-        "engine": "openai",
-        "model": "gpt-4o",
-        "full_name": "GPT-4o",
-        "context_window": 128_000,
-        "default_temperature": 0.7,
-
-        "cost": "medium",
-        "cost_per_mtok": {"input": 2.5, "output": 10.0},
-        "free_tier": False,
         "speed": "fast",
-        "quality": "excellent",
-        "best_for": ["general", "coding", "multimodal"],
-        "notes": "Latest GPT-4. Fast and capable. Good for multimodal tasks.",
+        "quality": "fair",
+        "best_for": ["coding", "local-dev", "lightweight"],
+        "notes": "Meta's Code Llama. Lightweight option. Requires ~5GB RAM.",
     },
 
-    "gpt-4o-mini": {
-        "engine": "openai",
-        "model": "gpt-4o-mini",
-        "full_name": "GPT-4o Mini",
+    "llama3.2:3b": {
+        "engine": "ollama",
+        "model": "llama3.2:3b",
+        "full_name": "Llama 3.2 3B",
         "context_window": 128_000,
         "default_temperature": 0.7,
 
-        "cost": "cheap",
-        "cost_per_mtok": {"input": 0.15, "output": 0.6},
-        "free_tier": False,
-        "speed": "very-fast",
-        "quality": "good",
-        "best_for": ["simple-tasks", "batch-processing", "cost-sensitive"],
-        "notes": "Cheap and fast. Good for simple tasks. 15x cheaper than GPT-4o.",
-    },
-
-    "gpt-4-turbo": {
-        "engine": "openai",
-        "model": "gpt-4-turbo",
-        "full_name": "GPT-4 Turbo",
-        "context_window": 128_000,
-        "default_temperature": 0.7,
-
-        "cost": "expensive",
-        "cost_per_mtok": {"input": 10.0, "output": 30.0},
-        "free_tier": False,
-        "speed": "medium",
-        "quality": "excellent",
-        "best_for": ["complex-reasoning", "analysis"],
-        "notes": "Previous generation. Generally superseded by GPT-4o.",
-    },
-
-    "gpt-3.5-turbo": {
-        "engine": "openai",
-        "model": "gpt-3.5-turbo",
-        "full_name": "GPT-3.5 Turbo",
-        "context_window": 16_385,
-        "default_temperature": 0.7,
-
-        "cost": "cheap",
-        "cost_per_mtok": {"input": 0.5, "output": 1.5},
-        "free_tier": False,
+        "cost": "free",
+        "cost_per_mtok": {"input": 0, "output": 0},
+        "free_tier": True,
         "speed": "very-fast",
         "quality": "fair",
-        "best_for": ["simple-tasks", "legacy-support", "cost-sensitive"],
-        "notes": "Older model. Cheap and fast. Superseded by gpt-4o-mini.",
+        "best_for": ["simple-tasks", "lightweight", "prototyping"],
+        "notes": "Ultra-lightweight general model. Fast inference. Requires ~2GB RAM.",
+    },
+
+    "llama3.2": {
+        "engine": "ollama",
+        "model": "llama3.2",
+        "full_name": "Llama 3.2",
+        "context_window": 128_000,
+        "default_temperature": 0.7,
+
+        "cost": "free",
+        "cost_per_mtok": {"input": 0, "output": 0},
+        "free_tier": True,
+        "speed": "medium",
+        "quality": "good",
+        "best_for": ["general", "local-dev"],
+        "notes": "General-purpose Llama model. Balanced performance.",
+    },
+
+    "llama3.1": {
+        "engine": "ollama",
+        "model": "llama3.1",
+        "full_name": "Llama 3.1",
+        "context_window": 128_000,
+        "default_temperature": 0.7,
+
+        "cost": "free",
+        "cost_per_mtok": {"input": 0, "output": 0},
+        "free_tier": True,
+        "speed": "medium",
+        "quality": "good",
+        "best_for": ["general", "local-dev"],
+        "notes": "Previous generation Llama. Still capable.",
+    },
+
+    "mistral": {
+        "engine": "ollama",
+        "model": "mistral",
+        "full_name": "Mistral 7B",
+        "context_window": 32_768,
+        "default_temperature": 0.7,
+
+        "cost": "free",
+        "cost_per_mtok": {"input": 0, "output": 0},
+        "free_tier": True,
+        "speed": "fast",
+        "quality": "good",
+        "best_for": ["general", "lightweight"],
+        "notes": "Mistral's 7B model. Good general performance. Requires ~5GB RAM.",
+    },
+
+    "deepseek-coder": {
+        "engine": "ollama",
+        "model": "deepseek-coder",
+        "full_name": "DeepSeek Coder",
+        "context_window": 16_384,
+        "default_temperature": 0.2,
+
+        "cost": "free",
+        "cost_per_mtok": {"input": 0, "output": 0},
+        "free_tier": True,
+        "speed": "medium",
+        "quality": "good",
+        "best_for": ["coding", "local-dev"],
+        "notes": "DeepSeek's original coding model.",
     },
 }
+
+#------------------------------------------------------------------------------
+# Custom Configs Registry (User-registered models)
+#------------------------------------------------------------------------------
+
+_CUSTOM_CONFIGS: dict[str, dict[str, Any]] = {}
 
 #------------------------------------------------------------------------------
 # Query Functions
@@ -333,45 +506,61 @@ def get_config(model_id: str) -> Optional[dict[str, Any]]:
     """Get configuration for a specific model.
 
     Args:
-        model_id: Model identifier (e.g., "sonnet-4.5", "qwen2.5-coder:7b")
+        model_id: The model identifier
 
     Returns:
-        Model configuration dict or None if not found
+        Model configuration dict with all metadata, or None if not found
 
     Example:
-        >>> config = get_config("sonnet-4.5")
-        >>> print(f"Cost: {config['cost']}")
-        >>> print(f"Best for: {', '.join(config['best_for'])}")
+        >>> config = get_config("gpt-4o")
+        >>> print(f"Cost: ${config['cost_per_mtok']['output']}/M output tokens")
     """
-    return MODEL_CONFIGS.get(model_id)
+    # Check built-in configs first
+    if model_id in MODEL_CONFIGS:
+        config = MODEL_CONFIGS[model_id].copy()
+        config["id"] = model_id
+        return config
+
+    # Check custom configs
+    if model_id in _CUSTOM_CONFIGS:
+        config = _CUSTOM_CONFIGS[model_id].copy()
+        config["id"] = model_id
+        return config
+
+    return None
 
 
 def list_configs(engine: Optional[str] = None) -> list[dict[str, Any]]:
-    """List all model configurations, optionally filtered by engine.
+    """List all available model configurations, optionally filtered by engine.
 
     Args:
-        engine: Optional engine to filter by (e.g., "claude-code", "ollama")
+        engine: Optional engine name to filter by
 
     Returns:
-        List of model configuration dicts
+        List of model configurations with metadata
 
     Example:
-        >>> # List all models
-        >>> all_models = list_configs()
-        >>>
-        >>> # List only Ollama models
         >>> ollama_models = list_configs(engine="ollama")
+        >>> for model in ollama_models:
+        ...     print(f"{model['id']}: {model['notes']}")
     """
-    if engine:
-        return [
-            {**config, "id": model_id}
-            for model_id, config in MODEL_CONFIGS.items()
-            if config["engine"] == engine
-        ]
-    return [
-        {**config, "id": model_id}
-        for model_id, config in MODEL_CONFIGS.items()
-    ]
+    configs = []
+
+    # Add built-in configs
+    for model_id, config in MODEL_CONFIGS.items():
+        if engine is None or config["engine"] == engine:
+            model_config = config.copy()
+            model_config["id"] = model_id
+            configs.append(model_config)
+
+    # Add custom configs
+    for model_id, config in _CUSTOM_CONFIGS.items():
+        if engine is None or config.get("engine") == engine:
+            model_config = config.copy()
+            model_config["id"] = model_id
+            configs.append(model_config)
+
+    return configs
 
 
 def find_configs(
@@ -382,59 +571,63 @@ def find_configs(
     free_tier: Optional[bool] = None,
     engine: Optional[str | list[str]] = None,
 ) -> list[dict[str, Any]]:
-    """Find models matching criteria.
+    """Find models matching the specified criteria.
+
+    All criteria are ANDed together. List values within a criterion are ORed.
 
     Args:
-        cost: Cost level(s): "free", "cheap", "medium", "expensive"
-        speed: Speed level(s): "very-fast", "fast", "medium", "slow", "very-slow"
-        quality: Quality level(s): "excellent", "good", "fair", "basic"
-        best_for: Use case(s): "coding", "general", "research", etc.
-        free_tier: True to only show models with free tier
-        engine: Engine(s) to filter by
+        cost: Cost level(s): free, cheap, medium, expensive
+        speed: Speed level(s): very-fast, fast, medium, slow, very-slow
+        quality: Quality level(s): excellent, good, fair, basic
+        best_for: Use case(s): coding, reasoning, general, etc.
+        free_tier: Whether model has free tier access
+        engine: Engine name(s): claude, opencode, ollama, etc.
 
     Returns:
         List of matching model configurations
 
     Example:
         >>> # Find free models good for coding
-        >>> free_coding = find_configs(cost="free", best_for="coding")
+        >>> models = find_configs(cost="free", best_for="coding")
         >>>
         >>> # Find fast, cheap models
-        >>> fast_cheap = find_configs(
-        ...     cost=["free", "cheap"],
-        ...     speed=["very-fast", "fast"]
-        ... )
+        >>> models = find_configs(cost=["free", "cheap"], speed="fast")
     """
+    # Normalize list parameters
+    def normalize(value):
+        if value is None:
+            return None
+        return [value] if isinstance(value, str) else value
+
+    cost_list = normalize(cost)
+    speed_list = normalize(speed)
+    quality_list = normalize(quality)
+    best_for_list = normalize(best_for)
+    engine_list = normalize(engine)
+
     results = []
 
-    # Normalize list parameters
-    if isinstance(cost, str):
-        cost = [cost]
-    if isinstance(speed, str):
-        speed = [speed]
-    if isinstance(quality, str):
-        quality = [quality]
-    if isinstance(best_for, str):
-        best_for = [best_for]
-    if isinstance(engine, str):
-        engine = [engine]
+    for model_id, config in {**MODEL_CONFIGS, **_CUSTOM_CONFIGS}.items():
+        # Check each criterion
+        if cost_list and config.get("cost") not in cost_list:
+            continue
+        if speed_list and config.get("speed") not in speed_list:
+            continue
+        if quality_list and config.get("quality") not in quality_list:
+            continue
+        if free_tier is not None and config.get("free_tier") != free_tier:
+            continue
+        if engine_list and config.get("engine") not in engine_list:
+            continue
+        if best_for_list:
+            model_use_cases = config.get("best_for", [])
+            if not any(use in model_use_cases for use in best_for_list):
+                continue
 
-    for model_id, config in MODEL_CONFIGS.items():
-        # Apply filters
-        if cost and config["cost"] not in cost:
-            continue
-        if speed and config["speed"] not in speed:
-            continue
-        if quality and config["quality"] not in quality:
-            continue
-        if best_for and not any(use in config["best_for"] for use in best_for):
-            continue
-        if free_tier is not None and config["free_tier"] != free_tier:
-            continue
-        if engine and config["engine"] not in engine:
-            continue
-
-        results.append({**config, "id": model_id})
+        # Model matches all criteria
+        model_config = config.copy()
+        model_config["id"] = model_id
+        results.append(model_config)
 
     return results
 
@@ -443,18 +636,21 @@ def get_default_model(engine: str) -> Optional[str]:
     """Get the default model for an engine.
 
     Args:
-        engine: Engine name (e.g., "claude-code", "ollama")
+        engine: Engine name (e.g., "claude", "ollama")
 
     Returns:
-        Default model ID or None if engine not found
+        Default model ID for the engine, or None if engine not found
 
     Example:
-        >>> default = get_default_model("claude-code")
-        >>> print(default)  # "sonnet-4.5"
+        >>> default = get_default_model("ollama")
+        >>> print(default)  # "qwen2.5-coder:7b"
     """
-    engine_config = ENGINE_CONFIGS.get(engine)
-    if engine_config:
-        return engine_config["default_model"]
+    # Handle aliases
+    if engine == "claude-code":
+        engine = "claude"
+
+    if engine in ENGINE_CONFIGS:
+        return ENGINE_CONFIGS[engine].get("default_model")
     return None
 
 
@@ -462,67 +658,78 @@ def list_engines() -> list[dict[str, Any]]:
     """List all supported engines.
 
     Returns:
-        List of engine configuration dicts
+        List of engine configurations with metadata
 
     Example:
         >>> engines = list_engines()
         >>> for engine in engines:
-        ...     print(f"{engine['name']}: {engine['description']}")
+        ...     print(f"{engine['id']}: {engine['description']}")
     """
-    return [
-        {**config, "id": engine_id}
-        for engine_id, config in ENGINE_CONFIGS.items()
-    ]
+    engines = []
+    for engine_id, config in ENGINE_CONFIGS.items():
+        engine_config = config.copy()
+        engine_config["id"] = engine_id
+        engines.append(engine_config)
+    return engines
 
 
 #------------------------------------------------------------------------------
-# Extension API (for custom configs)
+# Extension API (for custom models)
 #------------------------------------------------------------------------------
-
-_CUSTOM_CONFIGS: dict[str, dict[str, Any]] = {}
-
 
 def register_config(
     model_id: str,
     config: dict[str, Any],
-    override: bool = False,
+    override: bool = False
 ) -> bool:
     """Register a custom model configuration.
 
     Args:
         model_id: Unique identifier for the model
-        config: Configuration dict with required fields
-        override: Allow overriding existing configs
+        config: Model configuration dict (must include at least "engine" and "model")
+        override: Whether to override existing config with same ID
 
     Returns:
-        True if registered, False if already exists and override=False
+        True if registered successfully, False if ID already exists and override=False
 
     Example:
-        >>> register_config("my-local-model", {
+        >>> register_config("my-model", {
         ...     "engine": "ollama",
-        ...     "model": "my-model:latest",
+        ...     "model": "custom:latest",
         ...     "cost": "free",
         ...     "speed": "fast",
         ...     "quality": "good",
-        ...     "best_for": ["coding"],
+        ...     "best_for": ["testing"],
         ... })
     """
-    if model_id in MODEL_CONFIGS and not override:
-        return False
     if model_id in _CUSTOM_CONFIGS and not override:
         return False
 
-    _CUSTOM_CONFIGS[model_id] = config
+    # Ensure required fields with defaults
+    full_config = {
+        "cost": "medium",
+        "speed": "medium",
+        "quality": "good",
+        "best_for": [],
+        "free_tier": False,
+        "cost_per_mtok": {"input": 0, "output": 0},
+        "notes": "",
+        **config,
+    }
+
+    _CUSTOM_CONFIGS[model_id] = full_config
     return True
 
 
 def list_custom_configs() -> list[dict[str, Any]]:
-    """List all custom registered configurations.
+    """List all custom (user-registered) model configurations.
 
     Returns:
-        List of custom model configuration dicts
+        List of custom model configurations
     """
-    return [
-        {**config, "id": model_id}
-        for model_id, config in _CUSTOM_CONFIGS.items()
-    ]
+    configs = []
+    for model_id, config in _CUSTOM_CONFIGS.items():
+        model_config = config.copy()
+        model_config["id"] = model_id
+        configs.append(model_config)
+    return configs

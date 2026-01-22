@@ -19,10 +19,10 @@ class TestGetConfig:
 
     def test_get_existing_config(self):
         """Test getting an existing config."""
-        config = get_config("sonnet-4.5")
+        config = get_config("claude-sonnet-4-20250514")
         assert config is not None
-        assert config["engine"] == "claude-code"
-        assert config["model"] == "sonnet-4.5"
+        assert config["engine"] == "claude"
+        assert config["model"] == "claude-sonnet-4-20250514"
         assert config["cost"] == "medium"
 
     def test_get_nonexistent_config(self):
@@ -32,7 +32,7 @@ class TestGetConfig:
 
     def test_config_has_required_fields(self):
         """Test that configs have all required metadata fields."""
-        config = get_config("sonnet-4.5")
+        config = get_config("claude-sonnet-4-20250514")
         assert "cost" in config
         assert "speed" in config
         assert "quality" in config
@@ -148,7 +148,7 @@ class TestGetDefaultModel:
     def test_get_default_for_claude_code(self):
         """Test getting default model for claude-code engine."""
         default = get_default_model("claude-code")
-        assert default == "sonnet-4.5"
+        assert default == "claude-sonnet-4-20250514"
 
     def test_get_default_for_ollama(self):
         """Test getting default model for ollama engine."""
@@ -294,6 +294,9 @@ class TestEngineConfigs:
         """Test that default models referenced by engines exist."""
         for engine_id, config in ENGINE_CONFIGS.items():
             default = config["default_model"]
+            # Skip engines with no default model (configured externally)
+            if default is None:
+                continue
             # Find at least one model with this ID
             assert any(
                 m_id == default for m_id in MODEL_CONFIGS.keys()
