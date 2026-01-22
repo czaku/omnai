@@ -32,6 +32,7 @@ from .configs import (
 
     # Validation functions
     find_similar_models,
+    get_model_suggestions,
     validate_model,
 
     # Extension API
@@ -55,6 +56,7 @@ __all__ = [
 
     # Validation functions
     "find_similar_models",
+    "get_model_suggestions",
     "validate_model",
 
     # Extension API

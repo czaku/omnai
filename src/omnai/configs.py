@@ -860,11 +860,58 @@ def find_similar_models(
                 "id": mid,
                 "full_name": config.get("full_name", mid),
                 "engine": config.get("engine"),
-                "cost": config.get("cost"),
+                "cost": config.get("cost", "unknown"),
+                "speed": config.get("speed", "unknown"),
+                "quality": config.get("quality", "unknown"),
                 "model": config.get("model"),  # Actual model string used
             })
 
     return similar[:limit]
+
+
+def get_model_suggestions(
+    model_id: Optional[str] = None,
+    engine: Optional[str] = None,
+    limit: int = 10
+) -> list[dict[str, Any]]:
+    """Get model suggestions for interactive selection.
+
+    Returns structured model data suitable for building selection menus.
+    If model_id is provided, finds similar models. Otherwise, lists all
+    models for the specified engine (or all models if no engine).
+
+    Args:
+        model_id: Optional partial/incorrect model name to find similar to
+        engine: Optional engine to filter by
+        limit: Maximum number of suggestions (default: 10)
+
+    Returns:
+        List of model dicts with: id, full_name, engine, cost, speed, quality
+
+    Example:
+        >>> # Get all claude models
+        >>> suggestions = get_model_suggestions(engine="claude")
+        >>> for s in suggestions:
+        ...     print(f"{s['id']} - {s['cost']} cost, {s['speed']} speed")
+
+        >>> # Find models similar to typo
+        >>> suggestions = get_model_suggestions(model_id="minimax-m3", engine="opencode")
+        >>> # Returns minimax-m2.1, minimax-m2, etc.
+    """
+    if model_id:
+        # Find similar models (typo correction)
+        return find_similar_models(model_id, engine, limit)
+    else:
+        # List all models for engine
+        configs = list_configs(engine=engine)
+        return [{
+            "id": c["id"],
+            "full_name": c.get("full_name", c["id"]),
+            "engine": c["engine"],
+            "cost": c.get("cost", "unknown"),
+            "speed": c.get("speed", "unknown"),
+            "quality": c.get("quality", "unknown"),
+        } for c in configs[:limit]]
 
 
 def validate_model(model_id: str, engine: Optional[str] = None) -> dict[str, Any]:
