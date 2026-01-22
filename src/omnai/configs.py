@@ -293,6 +293,120 @@ MODEL_CONFIGS = {
         "notes": "MiniMax's latest model. Very cost-efficient.",
     },
 
+    # OpenCode Free Tier Models
+    "minimax-m2.1-free": {
+        "engine": "opencode",
+        "model": "minimax-m2.1-free",
+        "full_name": "MiniMax M2.1 (Free)",
+        "context_window": 32_000,
+        "default_temperature": 1.0,
+
+        "cost": "free",
+        "cost_per_mtok": {"input": 0, "output": 0},
+        "free_tier": True,
+        "speed": "fast",
+        "quality": "good",
+        "best_for": ["general", "cost-efficiency", "prototyping"],
+        "notes": "Free tier MiniMax M2.1 via opencode. No API key required.",
+    },
+
+    "big-pickle": {
+        "engine": "opencode",
+        "model": "big-pickle",
+        "full_name": "Big Pickle",
+        "context_window": 200_000,
+        "default_temperature": 1.0,
+
+        "cost": "free",
+        "cost_per_mtok": {"input": 0, "output": 0},
+        "free_tier": True,
+        "speed": "medium",
+        "quality": "good",
+        "best_for": ["general", "reasoning", "long-context"],
+        "notes": "Free reasoning model via opencode. 200K context window.",
+    },
+
+    "glm-4.7-free": {
+        "engine": "opencode",
+        "model": "glm-4.7-free",
+        "full_name": "GLM-4.7 (Free)",
+        "context_window": 204_000,
+        "default_temperature": 1.0,
+
+        "cost": "free",
+        "cost_per_mtok": {"input": 0, "output": 0},
+        "free_tier": True,
+        "speed": "medium",
+        "quality": "good",
+        "best_for": ["general", "long-context", "analysis"],
+        "notes": "Free GLM model via opencode. 204K context window for extensive documents.",
+    },
+
+    "gpt-5-nano": {
+        "engine": "opencode",
+        "model": "gpt-5-nano",
+        "full_name": "GPT-5 Nano",
+        "context_window": 16_000,
+        "default_temperature": 1.0,
+
+        "cost": "free",
+        "cost_per_mtok": {"input": 0, "output": 0},
+        "free_tier": True,
+        "speed": "very-fast",
+        "quality": "fair",
+        "best_for": ["simple-tasks", "testing", "prototyping"],
+        "notes": "Free lightweight model via opencode. Good for simple tasks.",
+    },
+
+    "grok-code": {
+        "engine": "opencode",
+        "model": "grok-code",
+        "full_name": "Grok Code",
+        "context_window": 32_000,
+        "default_temperature": 1.0,
+
+        "cost": "free",
+        "cost_per_mtok": {"input": 0, "output": 0},
+        "free_tier": True,
+        "speed": "fast",
+        "quality": "good",
+        "best_for": ["coding", "debugging", "prototyping"],
+        "notes": "Free coding-focused model via opencode.",
+    },
+
+    # OpenCode Private API Models (provider/model format)
+    "minimax-m2": {
+        "engine": "opencode",
+        "model": "minimax/MiniMax-M2",
+        "full_name": "MiniMax M2 (API)",
+        "context_window": 32_000,
+        "default_temperature": 1.0,
+
+        "cost": "cheap",
+        "cost_per_mtok": {"input": 0.3, "output": 1.2},
+        "free_tier": False,
+        "speed": "fast",
+        "quality": "good",
+        "best_for": ["general", "cost-efficiency"],
+        "notes": "MiniMax M2 via private API key. Use --model minimax/MiniMax-M2.",
+    },
+
+    "minimax-m2.1-api": {
+        "engine": "opencode",
+        "model": "minimax/MiniMax-M2.1",
+        "full_name": "MiniMax M2.1 (API)",
+        "context_window": 32_000,
+        "default_temperature": 1.0,
+
+        "cost": "cheap",
+        "cost_per_mtok": {"input": 0.3, "output": 1.2},
+        "free_tier": False,
+        "speed": "fast",
+        "quality": "good",
+        "best_for": ["general", "cost-efficiency"],
+        "notes": "MiniMax M2.1 via private API key. Use --model minimax/MiniMax-M2.1.",
+    },
+
     #--------------------------------------------------------------------------
     # Codex Models (OpenAI Codex CLI)
     #--------------------------------------------------------------------------
