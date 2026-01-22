@@ -402,6 +402,95 @@ ai_validate_engine() {
   return 0
 }
 
+# Select model interactively from available options
+# Usage: ai_select_model_interactive "engine" ["attempted_model"]
+ai_select_model_interactive() {
+  local engine="$1"
+  local attempted_model="${2:-}"
+  
+  # Only run if stdin is a TTY (not in scripts/pipes)
+  if [[ ! -t 0 ]]; then
+    ai_log_debug "Non-interactive session, skipping model selection"
+    return 1
+  fi
+  
+  # Check if OMNAI_INTERACTIVE_SELECT is enabled (default: true)
+  local interactive_enabled="${OMNAI_INTERACTIVE_SELECT:-true}"
+  if [[ "$interactive_enabled" == "false" ]]; then
+    ai_log_debug "Interactive selection disabled"
+    return 1
+  fi
+  
+  # Get model suggestions from Python
+  local suggestions
+  local python_cmd="from omnai import get_model_suggestions; models = get_model_suggestions("
+  if [[ -n "$attempted_model" ]]; then
+    python_cmd+="model_id='$attempted_model', "
+  fi
+  python_cmd+="engine='$engine', limit=10); "
+  python_cmd+="[print(f'{i}|{m[\"id\"]}|{m[\"cost\"]}|{m[\"speed\"]}|{m[\"full_name\"]}') for i, m in enumerate(models, 1)]"
+  
+  suggestions=$(python3 -c "$python_cmd" 2>/dev/null) || {
+    ai_log_debug "Failed to get model suggestions"
+    return 1
+  }
+  
+  if [[ -z "$suggestions" ]]; then
+    ai_log_debug "No model suggestions available"
+    return 1
+  fi
+  
+  # Display header
+  echo "" >&2
+  if [[ -n "$attempted_model" ]]; then
+    echo "Model '$attempted_model' not found for $engine." >&2
+    echo "" >&2
+  fi
+  echo "Available $engine models:" >&2
+  echo "" >&2
+  
+  # Display numbered list
+  while IFS='|' read -r num model_id cost speed full_name; do
+    printf "  %2s. %-30s - %-8s cost, %-10s speed\n" "$num" "$model_id" "$cost" "$speed" >&2
+  done <<< "$suggestions"
+  
+  echo "" >&2
+  
+  # Read user choice
+  local choice
+  read -r -p "Select a model [1-10] (or 'q' to quit): " choice >&2
+  
+  # Handle quit
+  if [[ "$choice" == "q" ]] || [[ "$choice" == "Q" ]]; then
+    ai_log_verbose "Model selection cancelled"
+    return 1
+  fi
+  
+  # Validate numeric choice
+  if ! [[ "$choice" =~ ^[0-9]+$ ]] || [[ "$choice" -lt 1 ]] || [[ "$choice" -gt 10 ]]; then
+    echo "Invalid choice: $choice" >&2
+    return 1
+  fi
+  
+  # Extract selected model ID
+  local selected_model
+  selected_model=$(echo "$suggestions" | sed -n "${choice}p" | cut -d'|' -f2)
+  
+  if [[ -z "$selected_model" ]]; then
+    echo "Invalid selection" >&2
+    return 1
+  fi
+  
+  # Set the model
+  export AI_MODEL="$selected_model"
+  ai_log_verbose "Selected model: $selected_model"
+  echo "✓ Using model: $selected_model" >&2
+  echo "" >&2
+  
+  return 0
+}
+
+
 # Check if model is valid for engine
 # Usage: ai_validate_model "engine" "model"
 ai_validate_model() {
@@ -410,36 +499,53 @@ ai_validate_model() {
 
   ai_log_debug "Validating model: $model for engine: $engine"
 
-  # If model is empty, use default
-  if [[ -z "$model" ]]; then
-    ai_log_verbose "No model specified, will use engine default"
-    return 0
+  # For engines with Python config support (claude, opencode, openai)
+  # Offer interactive model selection if model is invalid or missing
+  if [[ "$engine" == "claude" ]] || [[ "$engine" == "opencode" ]] || [[ "$engine" == "openai" ]]; then
+    # Check if model exists in Python configs
+    local model_exists=false
+    if [[ -n "$model" ]]; then
+      # Validate model exists using Python
+      if python3 -c "from omnai import get_config; import sys; sys.exit(0 if get_config('$model') else 1)" 2>/dev/null; then
+        model_exists=true
+        ai_log_debug "$engine model '$model' validated"
+      fi
+    fi
+    
+    # If model is missing or invalid, offer interactive selection
+    if [[ -z "$model" ]] || [[ "$model_exists" == "false" ]]; then
+      if ai_select_model_interactive "$engine" "$model"; then
+        # Model was selected successfully, re-get it from environment
+        model="${AI_MODEL}"
+        ai_log_verbose "Model selected interactively: $model"
+        return 0
+      else
+        # Interactive selection failed or was cancelled
+        if [[ -z "$model" ]]; then
+          # No model specified and selection failed - use engine default
+          ai_log_verbose "No model specified, will use engine default"
+          return 0
+        else
+          # Invalid model and selection failed - log warning but continue
+          ai_log_warning "$engine model '$model' not found in configs (may still work)"
+          return 0
+        fi
+      fi
+    fi
   fi
 
   # For ollama, check if model is pulled
   if [[ "$engine" == "ollama" ]]; then
-    if ! ollama list 2>/dev/null | grep -q "^${model}"; then
+    if [[ -n "$model" ]] && ! ollama list 2>/dev/null | grep -q "^${model}"; then
       ai_log_warning "Ollama model '$model' may not be pulled"
       ai_log_verbose "Pull with: ollama pull $model"
       # Don't fail - ollama will pull automatically or show error
     fi
   fi
 
-  # For claude, validate model names
-  if [[ "$engine" == "claude" ]]; then
-    case "$model" in
-      haiku|sonnet|opus|claude-3-*|claude-sonnet-*|claude-opus-*)
-        ai_log_debug "Claude model '$model' recognized"
-        ;;
-      *)
-        ai_log_warning "Claude model '$model' not recognized (may still work)"
-        ai_log_verbose "Known models: haiku, sonnet, opus"
-        ;;
-    esac
-  fi
-
   return 0
 }
+
 
 # Validate engine and model together
 ai_validate() {
