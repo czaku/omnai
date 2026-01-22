@@ -23,7 +23,7 @@
 #   AI_VERBOSE    - Enable verbose logging (0, 1, or 2 for very verbose)
 #   AI_TIMEOUT    - Timeout in seconds (default: 300)
 
-AI_RUNNER_VERSION="0.5.0"
+AI_RUNNER_VERSION="1.0.0-rc2"
 
 #------------------------------------------------------------------------------
 # Exit Code Semantics (v0.2.0)
