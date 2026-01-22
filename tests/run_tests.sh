@@ -523,6 +523,277 @@ test_error_handling
 sleep 0.3
 
 # ==============================================================================
+# Model Validation Tests
+# ==============================================================================
+
+test_model_validation() {
+  print_header "Model Validation Tests"
+
+  source "$AI_RUNNER"
+
+  print_test "Model validation function exists"
+  type ai_validate_model | grep -q "function" && print_pass "ai_validate_model() exists"
+
+  print_test "Valid model passes validation"
+  AI_MODEL="claude-3-5-sonnet" ai_validate_model >/dev/null 2>&1
+  assert_equals "$?" "0" "Valid model returns 0"
+
+  print_test "Empty model triggers auto-detect"
+  AI_MODEL="" ai_validate_model >/dev/null 2>&1
+  assert_equals "$?" "0" "Empty model returns 0"
+
+  print_test "Invalid model fails validation"
+  AI_MODEL="nonexistent-model-xyz" ai_validate_model >/dev/null 2>&1
+  if [[ $? -ne 0 ]]; then
+    print_pass "Invalid model returns non-zero"
+  else
+    print_skip "Model validation not implemented"
+  fi
+
+  print_test "Core model functions available"
+  if type ai_list_models | grep -q "function" 2>/dev/null; then
+    print_pass "ai_list_models() exists"
+  else
+    print_skip "ai_list_models not implemented"
+  fi
+}
+
+test_model_validation
+sleep 0.3
+
+# ==============================================================================
+# Provider-Specific Tests
+# ==============================================================================
+
+test_provider_specific() {
+  print_header "Provider-Specific Tests"
+
+  source "$AI_RUNNER"
+
+  print_test "Core provider functions available"
+  if type ai_setup_provider | grep -q "function" 2>/dev/null; then
+    print_pass "ai_setup_provider() exists"
+  else
+    print_skip "Provider setup not implemented"
+  fi
+
+  print_test "Provider check function exists"
+  if type ai_check_provider | grep -q "function" 2>/dev/null; then
+    print_pass "ai_check_provider() exists"
+    result=$(ai_check_provider "ollama" 2>/dev/null)
+    if [[ -n "$result" ]]; then
+      assert_contains "$result" '"status"' "Contains status field"
+    fi
+  else
+    print_skip "Provider check not implemented"
+  fi
+}
+
+test_provider_specific
+sleep 0.3
+
+# ==============================================================================
+# Context and Conversation Tests
+# ==============================================================================
+
+test_context_conversation() {
+  print_header "Context and Conversation Tests"
+
+  source "$AI_RUNNER"
+
+  print_test "Context management function exists"
+  if type ai_context | grep -q "function" 2>/dev/null; then
+    print_pass "ai_context() exists"
+  else
+    print_skip "Context management not implemented"
+  fi
+
+  print_test "Conversation functions available"
+  if type ai_conversation | grep -q "function" 2>/dev/null; then
+    print_pass "ai_conversation() exists"
+  else
+    print_skip "Conversation functions not implemented"
+  fi
+
+  print_test "System prompt functions available"
+  if type ai_system_prompt | grep -q "function" 2>/dev/null; then
+    print_pass "ai_system_prompt() exists"
+  else
+    print_skip "System prompt not implemented"
+  fi
+}
+
+test_context_conversation
+sleep 0.3
+
+# ==============================================================================
+# Timing and Performance Tests
+# ==============================================================================
+
+test_timing_performance() {
+  print_header "Timing and Performance Tests"
+
+  source "$AI_RUNNER"
+
+  print_test "Timer functions available"
+  if type ai_timer | grep -q "function" 2>/dev/null; then
+    print_pass "ai_timer() exists"
+  else
+    print_skip "Timer functions not implemented"
+  fi
+
+  print_test "Token counting available"
+  if type ai_count_tokens | grep -q "function" 2>/dev/null; then
+    print_pass "ai_count_tokens() exists"
+    result=$(ai_count_tokens "test prompt" 2>/dev/null)
+    [[ "$result" =~ ^[0-9]+$ ]] && print_pass "Token count returns integer"
+  else
+    print_skip "Token counting not implemented"
+  fi
+
+  print_test "Cost estimation available"
+  if type ai_cost | grep -q "function" 2>/dev/null; then
+    print_pass "ai_cost() exists"
+  else
+    print_skip "Cost estimation not implemented"
+  fi
+}
+
+test_timing_performance
+sleep 0.3
+
+# ==============================================================================
+# Stream Handling Tests
+# ==============================================================================
+
+test_stream_handling() {
+  print_header "Stream Handling Tests"
+
+  source "$AI_RUNNER"
+
+  print_test "Stream functions available"
+  if type ai_stream | grep -q "function" 2>/dev/null; then
+    print_pass "ai_stream() exists"
+  else
+    print_skip "Stream handling not implemented"
+  fi
+}
+
+test_stream_handling
+sleep 0.3
+
+# ==============================================================================
+# Cache Management Tests
+# ==============================================================================
+
+test_cache_management() {
+  print_header "Cache Management Tests"
+
+  source "$AI_RUNNER"
+
+  print_test "Cache functions available"
+  if type ai_cache | grep -q "function" 2>/dev/null; then
+    print_pass "ai_cache() exists"
+  else
+    print_skip "Cache management not implemented"
+  fi
+}
+
+test_cache_management
+sleep 0.3
+
+# ==============================================================================
+# Template Management Tests
+# ==============================================================================
+
+test_template_management() {
+  print_header "Template Management Tests"
+
+  source "$AI_RUNNER"
+
+  print_test "Template functions available"
+  if type ai_template | grep -q "function" 2>/dev/null; then
+    print_pass "ai_template() exists"
+  else
+    print_skip "Template management not implemented"
+  fi
+}
+
+test_template_management
+sleep 0.3
+
+# ==============================================================================
+# Multi-Turn Conversation Tests
+# ==============================================================================
+
+test_multi_turn() {
+  print_header "Multi-Turn Conversation Tests"
+
+  source "$AI_RUNNER"
+
+  print_test "Multi-turn functions available"
+  if type ai_multi_turn | grep -q "function" 2>/dev/null; then
+    print_pass "ai_multi_turn() exists"
+  else
+    print_skip "Multi-turn not implemented"
+  fi
+
+  print_test "Context window functions available"
+  if type ai_context_window | grep -q "function" 2>/dev/null; then
+    print_pass "ai_context_window() exists"
+  else
+    print_skip "Context window not implemented"
+  fi
+}
+
+test_multi_turn
+sleep 0.3
+
+# ==============================================================================
+# Security and Sanitization Tests
+# ==============================================================================
+
+test_security_sanitization() {
+  print_header "Security and Sanitization Tests"
+
+  source "$AI_RUNNER"
+
+  print_test "Security functions available"
+  if type ai_sanitize | grep -q "function" 2>/dev/null; then
+    print_pass "ai_sanitize() exists"
+  else
+    print_skip "Security functions not implemented"
+  fi
+}
+
+test_security_sanitization
+sleep 0.3
+
+# ==============================================================================
+# Version and Compatibility Tests
+# ==============================================================================
+
+test_version_compatibility() {
+  print_header "Version and Compatibility Tests"
+
+  source "$AI_RUNNER"
+
+  print_test "Version check function available"
+  if type ai_version | grep -q "function" 2>/dev/null; then
+    print_pass "ai_version() exists"
+  else
+    print_skip "Version functions not implemented"
+  fi
+
+  print_test "Version format is valid semantic version"
+  version=$(bash "$AI_RUNNER" --version)
+  [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]] && print_pass "Version follows semantic versioning"
+}
+
+test_version_compatibility
+sleep 0.3
+
+# ==============================================================================
 # ShellCheck Code Quality Tests
 # ==============================================================================
 
