@@ -4,16 +4,22 @@ Provides comprehensive model configurations with practical metadata including
 cost, speed, quality, and use-case recommendations.
 
 Example:
-    >>> from omnai import get_config, find_configs
+    >>> from omnai import get_config, find_configs, validate_model
     >>>
     >>> # Get specific model config
-    >>> config = get_config("sonnet-4.5")
+    >>> config = get_config("claude-sonnet-4-20250514")
     >>> print(f"Cost: ${config['cost_per_mtok']['output']}/M tokens")
     >>>
     >>> # Find models by criteria
     >>> free_coding = find_configs(cost="free", best_for="coding")
     >>> for model in free_coding:
     ...     print(f"{model['full_name']}: {model['notes']}")
+    >>>
+    >>> # Validate model with helpful suggestions on error
+    >>> try:
+    ...     config = validate_model("minimax-m2")  # Typo
+    ... except ValueError as e:
+    ...     print(e)  # Shows suggestions: minimax-m2.1, minimax-m2-api, etc.
 """
 
 from .configs import (
@@ -23,6 +29,10 @@ from .configs import (
     find_configs,
     get_default_model,
     list_engines,
+
+    # Validation functions
+    find_similar_models,
+    validate_model,
 
     # Extension API
     register_config,
@@ -42,6 +52,10 @@ __all__ = [
     "find_configs",
     "get_default_model",
     "list_engines",
+
+    # Validation functions
+    "find_similar_models",
+    "validate_model",
 
     # Extension API
     "register_config",

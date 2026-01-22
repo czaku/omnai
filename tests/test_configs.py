@@ -9,6 +9,8 @@ from omnai import (
     list_engines,
     register_config,
     list_custom_configs,
+    find_similar_models,
+    validate_model,
     ENGINE_CONFIGS,
     MODEL_CONFIGS,
 )
@@ -301,3 +303,118 @@ class TestEngineConfigs:
             assert any(
                 m_id == default for m_id in MODEL_CONFIGS.keys()
             ), f"Default model {default} for {engine_id} not found"
+
+
+class TestFindSimilarModels:
+    """Test find_similar_models function."""
+
+    def test_find_similar_exact_prefix(self):
+        """Test finding models with exact prefix match."""
+        similar = find_similar_models("minimax")
+        assert len(similar) > 0
+        # Should find minimax-m2.1, minimax-m2-api, minimax-m2.1-api, minimax-m2.1-free
+        assert all("minimax" in m["id"] for m in similar)
+
+    def test_find_similar_with_engine_filter(self):
+        """Test finding models filtered by engine."""
+        similar = find_similar_models("minimax", engine="opencode")
+        assert len(similar) > 0
+        assert all(m["engine"] == "opencode" for m in similar)
+
+    def test_find_similar_case_insensitive(self):
+        """Test case-insensitive matching."""
+        similar1 = find_similar_models("MINIMAX")
+        similar2 = find_similar_models("minimax")
+        assert len(similar1) == len(similar2)
+
+    def test_find_similar_respects_limit(self):
+        """Test that limit parameter works."""
+        similar = find_similar_models("qwen", limit=2)
+        assert len(similar) <= 2
+
+    def test_find_similar_no_matches(self):
+        """Test when no similar models found."""
+        similar = find_similar_models("nonexistent-xyz-123")
+        assert similar == []
+
+    def test_find_similar_includes_metadata(self):
+        """Test that results include required metadata."""
+        similar = find_similar_models("claude")
+        assert len(similar) > 0
+        for model in similar:
+            assert "id" in model
+            assert "full_name" in model
+            assert "engine" in model
+            assert "cost" in model
+
+
+class TestValidateModel:
+    """Test validate_model function."""
+
+    def test_validate_existing_model(self):
+        """Test validating an existing model."""
+        config = validate_model("claude-sonnet-4-20250514")
+        assert config is not None
+        assert config["engine"] == "claude"
+        assert config["model"] == "claude-sonnet-4-20250514"
+
+    def test_validate_with_engine_match(self):
+        """Test validation with matching engine."""
+        config = validate_model("claude-sonnet-4-20250514", engine="claude")
+        assert config["engine"] == "claude"
+
+    def test_validate_with_engine_mismatch(self):
+        """Test validation fails with mismatched engine."""
+        with pytest.raises(ValueError) as exc_info:
+            validate_model("claude-sonnet-4-20250514", engine="ollama")
+        assert "exists but is for engine" in str(exc_info.value)
+        assert "claude" in str(exc_info.value)
+        assert "not 'ollama'" in str(exc_info.value)
+
+    def test_validate_nonexistent_with_suggestions(self):
+        """Test validation failure shows suggestions for similar models."""
+        with pytest.raises(ValueError) as exc_info:
+            validate_model("minimax-m3")  # Doesn't exist but similar to minimax models
+        error_msg = str(exc_info.value)
+        assert "not found" in error_msg
+        assert "Did you mean" in error_msg
+        # Should suggest minimax-m2, minimax-m2.1, minimax-m2-api, etc.
+        assert "minimax" in error_msg
+
+    def test_validate_nonexistent_no_suggestions(self):
+        """Test validation failure with no similar models."""
+        with pytest.raises(ValueError) as exc_info:
+            validate_model("completely-nonexistent-xyz-123")
+        error_msg = str(exc_info.value)
+        assert "not found" in error_msg
+        assert "List available models" in error_msg
+
+    def test_validate_nonexistent_with_engine_filter(self):
+        """Test validation shows only engine-specific suggestions."""
+        with pytest.raises(ValueError) as exc_info:
+            validate_model("qwen", engine="ollama")
+        error_msg = str(exc_info.value)
+        assert "not found" in error_msg
+        # Should suggest ollama models only
+        if "Did you mean" in error_msg:
+            assert "ollama" in error_msg
+
+    def test_validate_returns_config_with_id(self):
+        """Test that validate_model returns config with id field."""
+        config = validate_model("gpt-4o")
+        assert "id" in config
+        assert config["id"] == "gpt-4o"
+
+    def test_validate_custom_model(self):
+        """Test validating a custom registered model."""
+        # Register a custom model
+        register_config("test-validate-custom", {
+            "engine": "ollama",
+            "model": "test:latest",
+            "cost": "free",
+        }, override=True)
+        
+        # Should validate successfully
+        config = validate_model("test-validate-custom")
+        assert config is not None
+        assert config["engine"] == "ollama"

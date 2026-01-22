@@ -788,6 +788,152 @@ def list_engines() -> list[dict[str, Any]]:
 
 
 #------------------------------------------------------------------------------
+# Validation Functions
+#------------------------------------------------------------------------------
+
+def find_similar_models(
+    model_id: str,
+    engine: Optional[str] = None,
+    limit: int = 5
+) -> list[dict[str, Any]]:
+    """Find similar model names for helpful suggestions.
+
+    Uses fuzzy matching on model IDs to suggest alternatives when
+    a model is not found. Useful for typos or partial names.
+
+    Args:
+        model_id: The model identifier to search for
+        engine: Optional engine filter (only suggest models for this engine)
+        limit: Maximum number of suggestions to return
+
+    Returns:
+        List of similar model configs with id, full_name, engine, cost
+
+    Example:
+        >>> similar = find_similar_models("minimax-m2", engine="opencode")
+        >>> for m in similar:
+        ...     print(f"{m['id']} - {m['cost']}")
+        minimax-m2.1 - cheap
+        minimax-m2-api - cheap
+    """
+    similar = []
+    search_lower = model_id.lower()
+
+    # Search in both built-in and custom configs
+    all_configs = {}
+    for mid, cfg in MODEL_CONFIGS.items():
+        all_configs[mid] = cfg
+    for mid, cfg in _CUSTOM_CONFIGS.items():
+        all_configs[mid] = cfg
+
+    for mid, config in all_configs.items():
+        # Filter by engine if specified
+        if engine and config.get("engine") != engine:
+            continue
+
+        mid_lower = mid.lower()
+
+        # Match strategies (in order of priority):
+        # 1. Exact substring match
+        # 2. Search term is in model ID
+        # 3. Model ID starts with search term
+        # 4. Common prefix (for typos like "minimax-m3" -> "minimax-m2")
+        matched = False
+
+        if search_lower in mid_lower or mid_lower in search_lower:
+            matched = True
+        elif mid_lower.startswith(search_lower) or search_lower.startswith(mid_lower[:len(search_lower)//2] if len(search_lower) > 3 else ""):
+            matched = True
+        else:
+            # Check for common prefix (at least 5 chars)
+            common_len = 0
+            for i, (c1, c2) in enumerate(zip(search_lower, mid_lower)):
+                if c1 == c2:
+                    common_len = i + 1
+                else:
+                    break
+            if common_len >= 5:
+                matched = True
+
+        if matched:
+            similar.append({
+                "id": mid,
+                "full_name": config.get("full_name", mid),
+                "engine": config.get("engine"),
+                "cost": config.get("cost"),
+                "model": config.get("model"),  # Actual model string used
+            })
+
+    return similar[:limit]
+
+
+def validate_model(model_id: str, engine: Optional[str] = None) -> dict[str, Any]:
+    """Validate that a model exists and return its configuration.
+
+    Strict validation with helpful error messages and suggestions.
+    Does NOT silently fall back or auto-generate configs.
+
+    Args:
+        model_id: The model identifier to validate
+        engine: Optional engine to validate against
+
+    Returns:
+        Model configuration dict if valid
+
+    Raises:
+        ValueError: If model not found (with suggestions if available)
+        ValueError: If model exists but engine doesn't match
+
+    Example:
+        >>> config = validate_model("claude-sonnet-4-20250514")
+        >>> print(config["engine"])
+        claude
+
+        >>> validate_model("minimax-m2")  # Typo
+        ValueError: Model 'minimax-m2' not found. Did you mean one of these?
+          - minimax-m2.1 (MiniMax M2.1) - opencode - cheap
+          - minimax-m2-api (MiniMax M2 (API)) - opencode - cheap
+    """
+    config = get_config(model_id)
+
+    if config is not None:
+        # Model exists - check engine matches if specified
+        if engine and config.get("engine") != engine:
+            raise ValueError(
+                f"Model '{model_id}' exists but is for engine '{config['engine']}', "
+                f"not '{engine}'"
+            )
+        return config
+
+    # Model not found - find similar ones for suggestions
+    similar = find_similar_models(model_id, engine)
+
+    if similar:
+        # Found similar models - show suggestions
+        suggestions = "\n".join(
+            f"  - {m['id']} ({m['full_name']}) - {m['engine']} - {m['cost']}"
+            for m in similar
+        )
+        engine_msg = f" for engine '{engine}'" if engine else ""
+        raise ValueError(
+            f"Model '{model_id}' not found{engine_msg}. Did you mean one of these?\n"
+            f"{suggestions}\n\n"
+            f"Use: --model <model-id>"
+        )
+
+    # No similar models found - provide generic help
+    engine_msg = f" for engine '{engine}'" if engine else ""
+    engine_filter = f', engine="{engine}"' if engine else ""
+    raise ValueError(
+        f"Model '{model_id}' not found{engine_msg}.\n\n"
+        f"List available models:\n"
+        f"  python -c 'from omnai import list_configs; "
+        f"configs = list_configs({engine_filter}); "
+        f"print(\"\\n\".join(c[\"id\"] for c in configs))'"
+    )
+
+
+#------------------------------------------------------------------------------
 # Extension API (for custom models)
 #------------------------------------------------------------------------------
 
