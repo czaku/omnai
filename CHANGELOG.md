@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to ai-runner are documented in this file.
+All notable changes to omni-ai are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://sememver.org/spec/v2.0.0.html).
@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://sememver.org/spec/v2.0
 
 ### Added
 - Structured JSON API (ai_get_engines, ai_get_models, ai_get_status, ai_get_config)
-- Config file support (~/.ai-runner.conf)
+- Config file support (~/.omni-ai.conf)
 - Error handling with provider-specific detection
 - 75 passing tests
 - ShellCheck validated
@@ -30,6 +30,6 @@ and this project adheres to [Semantic Versioning](https://sememver.org/spec/v2.0
 
 **Note:** Earlier versions (v0.1.0 - v0.5.0) have been removed as they contained breaking changes and are no longer maintained. Please use v1.0.0-rc1 or later.
 
-[Unreleased]: https://github.com/czaku/ai-runner/compare/v1.0.0-rc2...HEAD
-[v1.0.0-rc2]: https://github.com/czaku/ai-runner/releases/tag/v1.0.0-rc2
-[v1.0.0-rc1]: https://github.com/czaku/ai-runner/releases/tag/v1.0.0-rc1
+[Unreleased]: https://github.com/czaku/omni-ai/compare/v1.0.0-rc2...HEAD
+[v1.0.0-rc2]: https://github.com/czaku/omni-ai/releases/tag/v1.0.0-rc2
+[v1.0.0-rc1]: https://github.com/czaku/omni-ai/releases/tag/v1.0.0-rc1

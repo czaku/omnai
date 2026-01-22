@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# release.sh - Create and publish ai-runner releases
+# release.sh - Create and publish omni-ai releases
 
 set -e
 
 VERSION_FILE="ai-runner.sh"
 CHANGELOG="CHANGELOG.md"
-REPO="czaku/ai-runner"
+REPO="czaku/omni-ai"
 
 usage() {
     cat << EOF
@@ -60,7 +60,7 @@ create_release() {
     fi
 
     gh release create "$version" \
-        --title "ai-runner ${version}" \
+        --title "omni-ai ${version}" \
         --notes "See CHANGELOG.md for details" \
         $draft_flag \
         "$tarball"
