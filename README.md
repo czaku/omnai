@@ -2,6 +2,12 @@
 
 Universal local AI agent runner for bash scripts. A lightweight library for running prompts through various AI backends with retries, error handling, and progress callbacks.
 
+## Inspired by
+
+Based on [ralphy](https://github.com/michaelshimeles/ralphy) by michaelshimeles - the original implementation of running AI agents in bash loops.
+
+If you like omnai, check out [ralphy](https://github.com/michaelshimeles/ralphy) for the original.
+
 ## Supported Backends
 
 | Backend | Command | Description |
