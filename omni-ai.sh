@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ai-runner.sh - Universal local AI agent runner
+# omni-ai.sh - Universal local AI agent runner
 #
 # A lightweight library for running prompts through various AI backends:
 # - Claude CLI (claude / claude-code)
@@ -9,13 +9,13 @@
 # - Any custom backend
 #
 # Usage as library:
-#   source ai-runner.sh
+#   source omni-ai.sh
 #   ai_run "Your prompt here"
 #   ai_run_file /path/to/prompt.md
 #
 # Usage as CLI:
-#   ./ai-runner.sh --engine claude --model sonnet "Your prompt"
-#   ./ai-runner.sh --engine ollama --model llama3.2 --verbose "Your prompt"
+#   ./omni-ai.sh --engine claude --model sonnet "Your prompt"
+#   ./omni-ai.sh --engine ollama --model llama3.2 --verbose "Your prompt"
 #
 # Configuration (environment variables):
 #   AI_ENGINE     - Backend to use: claude, opencode, ollama, aider (auto-detected)
@@ -23,7 +23,7 @@
 #   AI_VERBOSE    - Enable verbose logging (0, 1, or 2 for very verbose)
 #   AI_TIMEOUT    - Timeout in seconds (default: 300)
 
-AI_RUNNER_VERSION="1.0.0-rc2"
+OMNI_AI_VERSION="1.0.0-rc3"
 
 #------------------------------------------------------------------------------
 # Exit Code Semantics (v0.2.0)
@@ -34,7 +34,7 @@ AI_EXIT_SUCCESS=0           # Completed successfully
 AI_EXIT_USER_ABORT=1        # User cancelled (Ctrl+C)
 AI_EXIT_PROVIDER_ERROR=2    # Provider error (rate limit, API error, etc.)
 AI_EXIT_INVALID_INPUT=3     # Bad prompt or configuration
-AI_EXIT_INTERNAL_ERROR=4    # ai-runner bug
+AI_EXIT_INTERNAL_ERROR=4    # omni-ai bug
 AI_EXIT_TIMEOUT=124         # Timed out (standard timeout code)
 
 # Get human-readable name for exit code
@@ -83,9 +83,9 @@ declare -A AI_KNOWN_MODELS=(
 
 # Load configuration from file
 # Usage: ai_load_config
-# Config file: ~/.ai-runner.conf or AI_RUNNER_CONFIG
+# Config file: ~/.omni-ai.conf or OMNI_AI_CONFIG
 ai_load_config() {
-  local config_file="${AI_RUNNER_CONFIG:-${HOME}/.ai-runner.conf}"
+  local config_file="${OMNI_AI_CONFIG:-${HOME}/.omni-ai.conf}"
 
   if [[ -f "$config_file" ]]; then
     ai_log_verbose "Loading config from: $config_file"
@@ -101,10 +101,10 @@ ai_load_config() {
 # Save current configuration to file
 # Usage: ai_save_config
 ai_save_config() {
-  local config_file="${AI_RUNNER_CONFIG:-${HOME}/.ai-runner.conf}"
+  local config_file="${OMNI_AI_CONFIG:-${HOME}/.omni-ai.conf}"
 
   cat > "$config_file" << EOF
-# ai-runner configuration
+# omni-ai configuration
 # Generated: $(date)
 
 # Default engine (auto, claude, opencode, ollama, aider)
@@ -152,30 +152,30 @@ else
 fi
 
 ai_log_info() {
-  echo -e "${_AI_BLUE}ℹ${_AI_NC} [ai-runner] $*" >&2
+  echo -e "${_AI_BLUE}ℹ${_AI_NC} [omni-ai] $*" >&2
 }
 
 ai_log_success() {
-  echo -e "${_AI_GREEN}✓${_AI_NC} [ai-runner] $*" >&2
+  echo -e "${_AI_GREEN}✓${_AI_NC} [omni-ai] $*" >&2
 }
 
 ai_log_warning() {
-  echo -e "${_AI_YELLOW}⚠${_AI_NC} [ai-runner] $*" >&2
+  echo -e "${_AI_YELLOW}⚠${_AI_NC} [omni-ai] $*" >&2
 }
 
 ai_log_error() {
-  echo -e "${_AI_RED}✗${_AI_NC} [ai-runner] ERROR: $*" >&2
+  echo -e "${_AI_RED}✗${_AI_NC} [omni-ai] ERROR: $*" >&2
 }
 
 ai_log_verbose() {
   if [[ "${AI_VERBOSE:-0}" -ge 1 ]]; then
-    echo -e "${_AI_DIM}[ai-runner] $*${_AI_NC}" >&2
+    echo -e "${_AI_DIM}[omni-ai] $*${_AI_NC}" >&2
   fi
 }
 
 ai_log_debug() {
   if [[ "${AI_VERBOSE:-0}" -ge 2 ]]; then
-    echo -e "${_AI_CYAN}[ai-runner:debug]${_AI_NC} $*" >&2
+    echo -e "${_AI_CYAN}[omni-ai:debug]${_AI_NC} $*" >&2
   fi
 }
 
@@ -555,7 +555,7 @@ ai_info() {
   local engine
   engine=$(ai_detect_engine)
 
-  echo "AI Runner v${AI_RUNNER_VERSION}"
+  echo "AI Runner v${OMNI_AI_VERSION}"
   echo ""
   echo "Current Configuration:"
   echo "  Engine:  ${AI_ENGINE:-auto} (detected: $engine)"
@@ -622,7 +622,7 @@ ai_list() {
   local installed_engines=()
   local engine_data=()
 
-  echo -e "${_AI_BLUE}AI Runner v${AI_RUNNER_VERSION}${_AI_NC}"
+  echo -e "${_AI_BLUE}AI Runner v${OMNI_AI_VERSION}${_AI_NC}"
   echo ""
   echo -e "${_AI_CYAN}Installed Engines & Models:${_AI_NC}"
   echo ""
@@ -870,7 +870,7 @@ ai_get_config() {
   working_dir="${working_dir//\"/\\\"}"
 
   cat << EOF
-{"version":"$AI_RUNNER_VERSION","config":{"engine":"$engine","model":"$model","timeout":$timeout,"verbose":$verbose,"working_dir":"$working_dir","retry_count":$retry_count,"retry_delay":$retry_delay,"retry_backoff":$retry_backoff},"detected_engine":"$current_engine"}
+{"version":"$OMNI_AI_VERSION","config":{"engine":"$engine","model":"$model","timeout":$timeout,"verbose":$verbose,"working_dir":"$working_dir","retry_count":$retry_count,"retry_delay":$retry_delay,"retry_backoff":$retry_backoff},"detected_engine":"$current_engine"}
 EOF
 }
 
@@ -1579,12 +1579,12 @@ ai_test() {
 
 _ai_cli_usage() {
   cat << 'EOF'
-ai-runner - Universal local AI agent runner
+omni-ai - Universal local AI agent runner
 
 USAGE:
-  ai-runner [OPTIONS] "prompt"
-  ai-runner [OPTIONS] --file /path/to/prompt.md
-  source ai-runner.sh  # Use as library
+  omni-ai [OPTIONS] "prompt"
+  omni-ai [OPTIONS] --file /path/to/prompt.md
+  source omni-ai.sh  # Use as library
 
 OPTIONS:
   -e, --engine <name>    AI engine: claude, opencode, ollama, aider
@@ -1597,13 +1597,13 @@ OPTIONS:
   --info                 Show configuration info
   -l, --list             List installed engines with all models
   --list-engines         List engine status only
-  --save-config          Save current config to ~/.ai-runner.conf
-  --load-config          Reload config from ~/.ai-runner.conf
+  --save-config          Save current config to ~/.omni-ai.conf
+  --load-config          Reload config from ~/.omni-ai.conf
   -h, --help             Show this help
   --version              Show version
 
 CONFIG FILE:
-  Configuration can be stored in ~/.ai-runner.conf
+  Configuration can be stored in ~/.omni-ai.conf
   Example:
     export AI_ENGINE=claude
     export AI_MODEL=sonnet
@@ -1611,20 +1611,20 @@ CONFIG FILE:
 
 EXAMPLES:
   # Auto-detect engine
-  ai-runner "What is 2+2?"
+  omni-ai "What is 2+2?"
 
   # Specify engine and model
-  ai-runner --engine claude --model sonnet "Explain quantum computing"
-  ai-runner --engine ollama --model llama3.2 "Write a haiku"
+  omni-ai --engine claude --model sonnet "Explain quantum computing"
+  omni-ai --engine ollama --model llama3.2 "Write a haiku"
 
   # Very verbose mode
-  ai-runner -v -v --engine claude "Debug this"
+  omni-ai -v -v --engine claude "Debug this"
 
   # From file
-  ai-runner --file prompt.md --engine ollama
+  omni-ai --file prompt.md --engine ollama
 
   # Interactive session
-  ai-runner --interactive --engine claude
+  omni-ai --interactive --engine claude
 
 ENVIRONMENT VARIABLES:
   AI_ENGINE     Default engine
@@ -1696,7 +1696,7 @@ _ai_cli_main() {
         exit 0
         ;;
       --version)
-        echo "ai-runner v${AI_RUNNER_VERSION}"
+        echo "omni-ai v${OMNI_AI_VERSION}"
         exit 0
         ;;
       -*)

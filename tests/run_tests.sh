@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# ai-runner Test Suite
+# omni-ai Test Suite
 # Run with: ./tests/run_tests.sh
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-AI_RUNNER="${SCRIPT_DIR}/../ai-runner.sh"
+AI_RUNNER="${SCRIPT_DIR}/../omni-ai.sh"
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -84,7 +84,7 @@ test_version() {
   print_test "Version output"
   local version
   version=$(bash "$AI_RUNNER" --version)
-  assert_contains "$version" "ai-runner v" "Version command works"
+  assert_contains "$version" "omni-ai v" "Version command works"
 
   print_test "Help output"
   local help_output
@@ -537,11 +537,11 @@ test_shellcheck() {
   print_test "ShellCheck available"
   print_pass "ShellCheck is installed"
 
-  print_test "ShellCheck on ai-runner.sh"
-  if shellcheck -x -s bash -e SC2250,SC2312,SC2249,SC2248,SC2001 ai-runner.sh >/dev/null 2>&1; then
-    print_pass "ai-runner.sh passes ShellCheck"
+  print_test "ShellCheck on omni-ai.sh"
+  if shellcheck -x -s bash -e SC2250,SC2312,SC2249,SC2248,SC2001 omni-ai.sh >/dev/null 2>&1; then
+    print_pass "omni-ai.sh passes ShellCheck"
   else
-    print_fail "ai-runner.sh has ShellCheck issues"
+    print_fail "omni-ai.sh has ShellCheck issues"
   fi
 
   print_test "ShellCheck on test scripts"

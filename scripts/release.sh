@@ -3,7 +3,7 @@
 
 set -e
 
-VERSION_FILE="ai-runner.sh"
+VERSION_FILE="omni-ai.sh"
 CHANGELOG="CHANGELOG.md"
 REPO="czaku/omni-ai"
 
@@ -11,7 +11,7 @@ usage() {
     cat << EOF
 Usage: $0 <version> [--draft]
 
-Create a GitHub release for ai-runner.
+Create a GitHub release for omni-ai.
 
 Arguments:
     version     Version tag (e.g., v1.0.0, v1.0.0-rc1, v1.1.0-beta)
@@ -33,8 +33,8 @@ create_release() {
     echo "Creating release $version..."
 
     # Create tarball
-    local tarball="ai-runner-${version}.tar.gz"
-    git archive --prefix="ai-runner-${version}/" -o "$tarball" HEAD
+    local tarball="omni-ai-${version}.tar.gz"
+    git archive --prefix="omni-ai-${version}/" -o "$tarball" HEAD
 
     # Calculate SHA256
     local sha=$(shasum -a 256 "$tarball" | cut -d' ' -f1)
